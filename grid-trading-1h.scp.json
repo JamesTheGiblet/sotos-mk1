@@ -1,0 +1,93 @@
+{
+  "protocol": {
+    "name": "Semantic Capsule Protocol",
+    "version": "1.0.0"
+  },
+  "manifest": {
+    "id": "grid-trading-1h-validated-2026-04-16",
+    "name": "Grid Trading (1H Validated)",
+    "version": "1.0.0",
+    "created": "2026-04-16T00:00:00.000Z",
+    "type": "grid",
+    "timeframe": "1H",
+    "symbol": "BTC/USD",
+    "exchange": "kraken",
+    "capital": 1000,
+    "status": "dry_run",
+    "parameters": {
+      "targetPct": 0.3,
+      "stopPct": 0.2,
+      "maxHoldHours": 12
+    },
+    "marketFit": {
+      "bestRegime": "RANGING",
+      "maxVolatility": 0.5
+    },
+    "hash": "grid1h20260416"
+  },
+  "strategy": {
+    "name": "Grid Trading (1H Validated)",
+    "entryRules": {
+      "type": "grid",
+      "description": "Price drops 0.5% below 20-period moving average in low volatility conditions"
+    },
+    "exitRules": {
+      "targetPct": 0.3,
+      "stopPct": 0.2,
+      "maxHoldHours": 12
+    }
+  },
+  "semantic_context": {
+    "regime": "RANGING",
+    "entry_rules": [
+      "Market Volatility < 0.5%",
+      "Price below MA(20) by 0.5% or more"
+    ],
+    "exit_rules": [
+      "Price recovers above MA(20)"
+    ],
+    "risk_management": {
+      "position_size": "3% of capital",
+      "stop_loss": "-0.2%",
+      "take_profit": "+0.3%",
+      "max_hold_hours": 12,
+      "timeframe": "1H"
+    },
+    "performance_metrics": {
+      "total_trades": 9,
+      "win_rate": "77.8%",
+      "backtest_return": "+7.6%",
+      "confidence": 0.72,
+      "capital_final": 1076,
+      "period": "720 x 1H candles (30 days)",
+      "note": "Only valid in very low volatility (< 0.5% hourly). Above this threshold edge disappears. Tested on 1H candles not daily."
+    }
+  },
+  "cognitive_layer": {
+    "intent": "Capture small price oscillations around the mean in tight ranging conditions",
+    "philosophy": "Grid trading works when volatility is low enough that price oscillates predictably around a centre. Above 0.5% hourly volatility the stops get hit too frequently.",
+    "mantra": "Small moves. Consistent edge. Low volatility only.",
+    "warning": "Do not run in volatile conditions. This strategy loses its edge above 0.5% hourly volatility."
+  },
+  "lineage": {
+    "parent": null,
+    "source": "Backtest — grid_optimise_1h.js",
+    "validated_against": "720 x 1H BTC/USD candles"
+  },
+  "lifecycle": {
+    "status": "dry_run",
+    "last_updated": "2026-04-16T00:00:00.000Z",
+    "validation": {
+      "passed": true,
+      "reason": "Passed: 77.8% WR, +7.6% return, 9 trades on 1H data",
+      "gate": "WR>=50%, Return>0%, Trades>=5",
+      "engine": "grid_optimise_1h.js",
+      "validated_at": "2026-04-16T00:00:00.000Z"
+    }
+  },
+  "sovereignty": {
+    "chronoscribe_signature": null,
+    "signed_at": null,
+    "note": "Signature to be added by ChronoScribe on filing"
+  }
+}

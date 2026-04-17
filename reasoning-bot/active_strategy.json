@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-04-16T18:36:25.867Z",
+  "strategy": "hyp_h_e_consecutive_red___rsi_mnzy4jj8",
+  "name": "H.E Consecutive Red + RSI",
+  "marketState": {
+    "regime": "RANGING",
+    "sentiment": "NEUTRAL",
+    "phase": "ACCUMULATION",
+    "volatility": 1.8544292584549222,
+    "trend": 1.2863820204323457,
+    "volumeRatio": 0.21916770841695482,
+    "btcPrice": 71422.7,
+    "lastUpdated": "2026-04-16T18:36:25.860Z",
+    "timestamp": "2026-04-16T18:36:25.860Z"
+  }
+}

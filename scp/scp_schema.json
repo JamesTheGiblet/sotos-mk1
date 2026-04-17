@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Semantic Capsule Protocol",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["manifest", "strategy", "storage", "engine", "validation"],
+  "properties": {
+    "manifest": {
+      "type": "object",
+      "required": ["id", "name", "version", "type", "capabilities"]
+    },
+    "strategy": {
+      "type": "object",
+      "required": ["entryRules", "exitRules"]
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "status": { "enum": ["pending", "validated", "failed", "under_review"] }
+      }
+    }
+  }
+}

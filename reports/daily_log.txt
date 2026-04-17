@@ -1,0 +1,2 @@
+2026-04-09 | Capital: 17931{CAPITAL} | Trades: 26 | Daily PnL: 17931{DAILY_PNL} | Return: 0%
+2026-04-09 | Capital: $165.56 | Trades: 26 | Daily PnL: $0.00 | Return: 0.00%

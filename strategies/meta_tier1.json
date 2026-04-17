@@ -1,0 +1,11 @@
+{
+  "name": "Meta Tier 1",
+  "description": "Combines all elite strategies — trade when 2+ agree",
+  "strategies": ["four_red_days", "f2i1vk", "eh3g6y", "wp1xga", "qpmcb7", "01en2w"],
+  "consensus": 2,
+  "params": {
+    "targetPct": 1.5,
+    "stopPct": 1,
+    "maxHoldDays": 5
+  }
+}

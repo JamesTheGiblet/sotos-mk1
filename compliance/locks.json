@@ -1,0 +1,7 @@
+{
+  "lock1_dry_run_days": 30,
+  "lock2_validation_passed": true,
+  "lock3_api_key_present": true,
+  "overall_status": "READY_FOR_LIVE",
+  "lock1_complete": true
+}

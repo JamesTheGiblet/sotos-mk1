@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-04-16T00:00:00.000Z",
+  "archived_strategies": [],
+  "summary": {
+    "total_archived": 0,
+    "average_win_rate": 0,
+    "average_return": 0,
+    "by_regime": {
+      "RANGING": 0,
+      "TRENDING_UP": 0,
+      "TRENDING_DOWN": 0,
+      "VOLATILE": 0
+    }
+  }
+}

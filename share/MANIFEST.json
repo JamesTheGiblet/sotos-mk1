@@ -1,0 +1,23 @@
+{
+  "platform": "Adaptive Intelligence Platform",
+  "version": "1.0.0",
+  "philosophy": {
+    "pillars": ["Cost Control", "Security", "Quality", "Efficiency", "Freedom"],
+    "origin": "Built to solve developer workflow problems",
+    "creator": "Giblets Creations"
+  },
+  "tools": [
+    { "name": "Kraken Intelligence", "status": "MVP_READY", "category": "Trading" },
+    { "name": "Whisper", "status": "MVP_READY", "category": "Security" },
+    { "name": "Aegis", "status": "MVP_READY", "category": "Compliance" },
+    { "name": "EmbedID", "status": "MVP_READY", "category": "Provenance" },
+    { "name": "MarkFlow", "status": "MVP_READY", "category": "Documentation" }
+  ],
+  "principles": [
+    "No cloud dependencies",
+    "MIT License — free for commercial use",
+    "Forward testing before validation",
+    "Mandatory dry runs (30 days minimum)",
+    "SCP for strategy portability"
+  ]
+}

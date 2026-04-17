@@ -1,0 +1,24 @@
+[
+  {
+    "strategyId": "consecutive_red",
+    "timestamp": "2026-04-15T09:24:37.778Z"
+  },
+  {
+    "strategyId": "consecutive_red",
+    "timestamp": "2026-04-15T09:24:38.101Z"
+  },
+  {
+    "strategyId": "consecutive_red",
+    "timestamp": "2026-04-15T09:25:15.507Z"
+  },
+  {
+    "strategyId": "consecutive_red",
+    "timestamp": "2026-04-15T09:27:47.337Z",
+    "passed": true,
+    "backtestWinRate": 73.33333333333333,
+    "forwardWinRate": 85.71428571428571,
+    "score": 773.6979361805319,
+    "grade": "A",
+    "degradation": 0
+  }
+]

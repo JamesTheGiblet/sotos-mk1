@@ -1,0 +1,14 @@
+{
+  "fingerprint": "ae97d4e70821270b",
+  "hash": "ae97d4e70821270b7102206e080468c2f26aad6aa24232651a2f4ef13274a4a6",
+  "timestamp": "2026-04-15T09:49:25.337Z",
+  "strategyId": "consecutive_red",
+  "metadata": {
+    "type": "consecutive_red",
+    "parameters": {
+      "targetPct": 2,
+      "stopPct": 1,
+      "maxHoldDays": 5
+    }
+  }
+}

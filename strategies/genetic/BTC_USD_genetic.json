@@ -1,0 +1,198 @@
+[
+  {
+    "strategy": {
+      "signals": [
+        {
+          "type": "rsi",
+          "params": {
+            "period": 14,
+            "compare": "<",
+            "threshold": 30
+          }
+        },
+        {
+          "type": "price_drop",
+          "params": {
+            "dropPct": 7
+          }
+        }
+      ],
+      "signalLogic": "OR",
+      "phaseFilter": 3,
+      "entryTiming": "close",
+      "targetPct": 4,
+      "stopPct": 2.5,
+      "maxHoldDays": 21,
+      "trailingStop": 0,
+      "fitness": 32.671741664848604
+    },
+    "trainFit": 32.671741664848604,
+    "testExpectancy": 0.2832819011280021,
+    "testReturn": -0.6118361526901452,
+    "monteCarloRatio": 0.984
+  },
+  {
+    "strategy": {
+      "signals": [
+        {
+          "type": "rsi",
+          "params": {
+            "period": 14,
+            "compare": "<",
+            "threshold": 30
+          }
+        },
+        {
+          "type": "price_drop",
+          "params": {
+            "dropPct": 7
+          }
+        }
+      ],
+      "signalLogic": "OR",
+      "phaseFilter": 3,
+      "phaseLookback": 20,
+      "entryTiming": "close",
+      "targetPct": 4,
+      "stopPct": 2.5,
+      "maxHoldDays": 21,
+      "trailingStop": 0,
+      "fitness": 32.671741664848604
+    },
+    "trainFit": 32.671741664848604,
+    "testExpectancy": 0.2832819011280021,
+    "testReturn": -0.6118361526901452,
+    "monteCarloRatio": 0.988
+  },
+  {
+    "strategy": {
+      "signals": [
+        {
+          "type": "rsi",
+          "params": {
+            "period": 14,
+            "compare": "<",
+            "threshold": 30
+          }
+        },
+        {
+          "type": "price_drop",
+          "params": {
+            "dropPct": 7
+          }
+        }
+      ],
+      "signalLogic": "OR",
+      "phaseFilter": 3,
+      "phaseLookback": 20,
+      "entryTiming": "close",
+      "targetPct": 4,
+      "stopPct": 2.5,
+      "maxHoldDays": 21,
+      "trailingStop": 0,
+      "fitness": 32.671741664848604
+    },
+    "trainFit": 32.671741664848604,
+    "testExpectancy": 0.2832819011280021,
+    "testReturn": -0.6118361526901452,
+    "monteCarloRatio": 0.986
+  },
+  {
+    "strategy": {
+      "signals": [
+        {
+          "type": "rsi",
+          "params": {
+            "period": 14,
+            "compare": "<",
+            "threshold": 30
+          }
+        },
+        {
+          "type": "price_drop",
+          "params": {
+            "dropPct": 7
+          }
+        }
+      ],
+      "signalLogic": "OR",
+      "phaseFilter": 3,
+      "entryTiming": "close",
+      "targetPct": 4,
+      "stopPct": 2.5,
+      "maxHoldDays": 21,
+      "trailingStop": 0,
+      "fitness": 32.671741664848604
+    },
+    "trainFit": 32.671741664848604,
+    "testExpectancy": 0.2832819011280021,
+    "testReturn": -0.6118361526901452,
+    "monteCarloRatio": 0.994
+  },
+  {
+    "strategy": {
+      "signals": [
+        {
+          "type": "rsi",
+          "params": {
+            "period": 14,
+            "compare": "<",
+            "threshold": 30
+          }
+        },
+        {
+          "type": "price_drop",
+          "params": {
+            "dropPct": 7
+          }
+        }
+      ],
+      "signalLogic": "OR",
+      "phaseFilter": 3,
+      "phaseLookback": 20,
+      "entryTiming": "close",
+      "targetPct": 4,
+      "stopPct": 2.5,
+      "maxHoldDays": 21,
+      "trailingStop": 0,
+      "fitness": 32.671741664848604
+    },
+    "trainFit": 32.671741664848604,
+    "testExpectancy": 0.2832819011280021,
+    "testReturn": -0.6118361526901452,
+    "monteCarloRatio": 0.982
+  },
+  {
+    "strategy": {
+      "signals": [
+        {
+          "type": "rsi",
+          "params": {
+            "period": 14,
+            "compare": "<",
+            "threshold": 30
+          }
+        },
+        {
+          "type": "price_drop",
+          "params": {
+            "dropPct": 7
+          }
+        }
+      ],
+      "signalLogic": "OR",
+      "phaseFilter": 3,
+      "phaseLookback": 20,
+      "entryTiming": "close",
+      "targetPct": 4,
+      "stopPct": 2.5,
+      "maxHoldDays": 21,
+      "trailingStop": 0,
+      "fitness": 32.671741664848604
+    },
+    "trainFit": 32.671741664848604,
+    "testExpectancy": 0.2832819011280021,
+    "testReturn": -0.6118361526901452,
+    "monteCarloRatio": 0.986
+  }
+]

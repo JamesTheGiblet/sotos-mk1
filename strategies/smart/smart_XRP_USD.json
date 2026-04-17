@@ -1,0 +1,814 @@
+[
+  {
+    "chromosome": {
+      "entrySignals": [
+        {
+          "type": "rsi_oversold",
+          "params": {
+            "period": 7,
+            "threshold": 20
+          }
+        },
+        {
+          "type": "volume_spike",
+          "params": {
+            "period": 20,
+            "multiplier": 1.5
+          }
+        }
+      ],
+      "logic": "AND",
+      "seqWin": 5,
+      "entryTiming": "next_open",
+      "targetPct": 4,
+      "stopPct": 1.5,
+      "trailingStop": true,
+      "trailingPct": 2,
+      "maxHoldDays": 7,
+      "phaseWeights": {
+        "accum": {
+          "atrMax": 1.5,
+          "atrW": 1,
+          "volMax": 0.8,
+          "volW": 1,
+          "maDistMax": 3,
+          "maW": 1
+        },
+        "markup": {
+          "minGreens": 3,
+          "greenW": 1,
+          "maBullMin": 2,
+          "maW": 1,
+          "atrMin": 1,
+          "atrW": 0.5
+        },
+        "dist": {
+          "maBullMin": 5,
+          "maW": 1,
+          "volMin": 1.3,
+          "volW": 1,
+          "rsiMin": 60,
+          "rsiW": 1
+        },
+        "mark": {
+          "minReds": 3,
+          "redW": 0.9305876167367138,
+          "maDistMax": -2,
+          "maW": 1,
+          "rsiMax": 45,
+          "rsiW": 1
+        },
+        "cap": {
+          "rsiMax": 30,
+          "rsiW": 2,
+          "volMin": 1.5,
+          "volW": 1,
+          "atrMin": 2,
+          "atrW": 1,
+          "maDistMax": -5,
+          "maW": 1.2527000529058092
+        }
+      }
+    },
+    "train": {
+      "trades": 5,
+      "wr": 80,
+      "exp": 6.648,
+      "ret": 34.91,
+      "aw": 8.778,
+      "al": 1.872,
+      "sh": 0.787,
+      "rawTrades": [
+        {
+          "win": true,
+          "pnl": 5.056055683971601,
+          "hd": 5,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 2.108336850991977,
+          "hd": 7,
+          "exit": "timeout"
+        },
+        {
+          "win": false,
+          "pnl": -1.87238405696582,
+          "hd": 0,
+          "exit": "stop"
+        },
+        {
+          "win": true,
+          "pnl": 22.733210932225926,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 5.212486533934488,
+          "hd": 3,
+          "exit": "target"
+        }
+      ]
+    },
+    "test": {
+      "trades": 3,
+      "wr": 100,
+      "exp": 15.556,
+      "ret": 49.94,
+      "aw": 15.556,
+      "al": 0,
+      "sh": 1.033,
+      "rawTrades": [
+        {
+          "win": true,
+          "pnl": 4.661368306773691,
+          "hd": 0,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 36.84781389690354,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 5.159275036962679,
+          "hd": 1,
+          "exit": "target"
+        }
+      ]
+    },
+    "val": {
+      "trades": 8,
+      "wr": 62.5,
+      "exp": 4.345,
+      "ret": 36.16,
+      "aw": 8.744,
+      "al": 2.987,
+      "sh": 0.582,
+      "rawTrades": [
+        {
+          "win": true,
+          "pnl": 6.306920202649245,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 6.1073409702098225,
+          "hd": 0,
+          "exit": "target"
+        },
+        {
+          "win": false,
+          "pnl": -2.6642222838906595,
+          "hd": 1,
+          "exit": "stop"
+        },
+        {
+          "win": true,
+          "pnl": 4.91590757552444,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 5.469028640384381,
+          "hd": 0,
+          "exit": "target"
+        },
+        {
+          "win": false,
+          "pnl": -3.603704435353964,
+          "hd": 0,
+          "exit": "stop"
+        },
+        {
+          "win": false,
+          "pnl": -2.691791552081073,
+          "hd": 0,
+          "exit": "stop"
+        },
+        {
+          "win": true,
+          "pnl": 20.92242408748288,
+          "hd": 0,
+          "exit": "target"
+        }
+      ]
+    },
+    "fitness": 9.23266401925391,
+    "mcPct": 100
+  },
+  {
+    "chromosome": {
+      "entrySignals": [
+        {
+          "type": "rsi_oversold",
+          "params": {
+            "period": 7,
+            "threshold": 20
+          }
+        },
+        {
+          "type": "volume_spike",
+          "params": {
+            "period": 20,
+            "multiplier": 1.5
+          }
+        }
+      ],
+      "logic": "AND",
+      "seqWin": 5,
+      "entryTiming": "next_open",
+      "targetPct": 4,
+      "stopPct": 1.5,
+      "trailingStop": false,
+      "trailingPct": 0,
+      "maxHoldDays": 7,
+      "phaseWeights": {
+        "accum": {
+          "atrMax": 1.5,
+          "atrW": 1,
+          "volMax": 0.8,
+          "volW": 1,
+          "maDistMax": 3,
+          "maW": 1
+        },
+        "markup": {
+          "minGreens": 3,
+          "greenW": 1,
+          "maBullMin": 2,
+          "maW": 1,
+          "atrMin": 1,
+          "atrW": 0.5
+        },
+        "dist": {
+          "maBullMin": 5,
+          "maW": 1,
+          "volMin": 1.3,
+          "volW": 1,
+          "rsiMin": 60,
+          "rsiW": 1
+        },
+        "mark": {
+          "minReds": 3,
+          "redW": 1,
+          "maDistMax": -2,
+          "maW": 1,
+          "rsiMax": 45,
+          "rsiW": 0.8054727076194267
+        },
+        "cap": {
+          "rsiMax": 30,
+          "rsiW": 2,
+          "volMin": 1.5,
+          "volW": 1,
+          "atrMin": 2,
+          "atrW": 1,
+          "maDistMax": -5,
+          "maW": 1
+        }
+      }
+    },
+    "train": {
+      "trades": 5,
+      "wr": 80,
+      "exp": 6.648,
+      "ret": 34.91,
+      "aw": 8.778,
+      "al": 1.872,
+      "sh": 0.787,
+      "rawTrades": [
+        {
+          "win": true,
+          "pnl": 5.056055683971601,
+          "hd": 5,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 2.108336850991977,
+          "hd": 7,
+          "exit": "timeout"
+        },
+        {
+          "win": false,
+          "pnl": -1.87238405696582,
+          "hd": 0,
+          "exit": "stop"
+        },
+        {
+          "win": true,
+          "pnl": 22.733210932225926,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 5.212486533934488,
+          "hd": 3,
+          "exit": "target"
+        }
+      ]
+    },
+    "test": {
+      "trades": 3,
+      "wr": 100,
+      "exp": 15.556,
+      "ret": 49.94,
+      "aw": 15.556,
+      "al": 0,
+      "sh": 1.033,
+      "rawTrades": [
+        {
+          "win": true,
+          "pnl": 4.661368306773691,
+          "hd": 0,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 36.84781389690354,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 5.159275036962679,
+          "hd": 1,
+          "exit": "target"
+        }
+      ]
+    },
+    "val": {
+      "trades": 8,
+      "wr": 62.5,
+      "exp": 4.345,
+      "ret": 36.16,
+      "aw": 8.744,
+      "al": 2.987,
+      "sh": 0.582,
+      "rawTrades": [
+        {
+          "win": true,
+          "pnl": 6.306920202649245,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 6.1073409702098225,
+          "hd": 0,
+          "exit": "target"
+        },
+        {
+          "win": false,
+          "pnl": -2.6642222838906595,
+          "hd": 1,
+          "exit": "stop"
+        },
+        {
+          "win": true,
+          "pnl": 4.91590757552444,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 5.469028640384381,
+          "hd": 0,
+          "exit": "target"
+        },
+        {
+          "win": false,
+          "pnl": -3.603704435353964,
+          "hd": 0,
+          "exit": "stop"
+        },
+        {
+          "win": false,
+          "pnl": -2.691791552081073,
+          "hd": 0,
+          "exit": "stop"
+        },
+        {
+          "win": true,
+          "pnl": 20.92242408748288,
+          "hd": 0,
+          "exit": "target"
+        }
+      ]
+    },
+    "fitness": 9.23266401925391,
+    "mcPct": 100
+  },
+  {
+    "chromosome": {
+      "entrySignals": [
+        {
+          "type": "rsi_oversold",
+          "params": {
+            "period": 7,
+            "threshold": 20
+          }
+        },
+        {
+          "type": "volume_spike",
+          "params": {
+            "period": 20,
+            "multiplier": 1.5
+          }
+        }
+      ],
+      "logic": "AND",
+      "seqWin": 5,
+      "entryTiming": "next_open",
+      "targetPct": 4,
+      "stopPct": 1.5,
+      "trailingStop": true,
+      "trailingPct": 1.5,
+      "maxHoldDays": 7,
+      "phaseWeights": {
+        "accum": {
+          "atrMax": 1.5,
+          "atrW": 1,
+          "volMax": 0.8,
+          "volW": 1,
+          "maDistMax": 3,
+          "maW": 1
+        },
+        "markup": {
+          "minGreens": 3,
+          "greenW": 1,
+          "maBullMin": 2,
+          "maW": 1,
+          "atrMin": 1,
+          "atrW": 0.5
+        },
+        "dist": {
+          "maBullMin": 4.446626844744268,
+          "maW": 1,
+          "volMin": 1.3,
+          "volW": 1,
+          "rsiMin": 60,
+          "rsiW": 1
+        },
+        "mark": {
+          "minReds": 3,
+          "redW": 1,
+          "maDistMax": -2,
+          "maW": 1,
+          "rsiMax": 45,
+          "rsiW": 1
+        },
+        "cap": {
+          "rsiMax": 30,
+          "rsiW": 2,
+          "volMin": 1.5,
+          "volW": 1,
+          "atrMin": 2,
+          "atrW": 1,
+          "maDistMax": -5,
+          "maW": 1.2527000529058092
+        }
+      }
+    },
+    "train": {
+      "trades": 5,
+      "wr": 80,
+      "exp": 6.648,
+      "ret": 34.91,
+      "aw": 8.778,
+      "al": 1.872,
+      "sh": 0.787,
+      "rawTrades": [
+        {
+          "win": true,
+          "pnl": 5.056055683971601,
+          "hd": 5,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 2.108336850991977,
+          "hd": 7,
+          "exit": "timeout"
+        },
+        {
+          "win": false,
+          "pnl": -1.87238405696582,
+          "hd": 0,
+          "exit": "stop"
+        },
+        {
+          "win": true,
+          "pnl": 22.733210932225926,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 5.212486533934488,
+          "hd": 3,
+          "exit": "target"
+        }
+      ]
+    },
+    "test": {
+      "trades": 3,
+      "wr": 100,
+      "exp": 15.556,
+      "ret": 49.94,
+      "aw": 15.556,
+      "al": 0,
+      "sh": 1.033,
+      "rawTrades": [
+        {
+          "win": true,
+          "pnl": 4.661368306773691,
+          "hd": 0,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 36.84781389690354,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 5.159275036962679,
+          "hd": 1,
+          "exit": "target"
+        }
+      ]
+    },
+    "val": {
+      "trades": 8,
+      "wr": 62.5,
+      "exp": 4.345,
+      "ret": 36.16,
+      "aw": 8.744,
+      "al": 2.987,
+      "sh": 0.582,
+      "rawTrades": [
+        {
+          "win": true,
+          "pnl": 6.306920202649245,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 6.1073409702098225,
+          "hd": 0,
+          "exit": "target"
+        },
+        {
+          "win": false,
+          "pnl": -2.6642222838906595,
+          "hd": 1,
+          "exit": "stop"
+        },
+        {
+          "win": true,
+          "pnl": 4.91590757552444,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 5.469028640384381,
+          "hd": 0,
+          "exit": "target"
+        },
+        {
+          "win": false,
+          "pnl": -3.603704435353964,
+          "hd": 0,
+          "exit": "stop"
+        },
+        {
+          "win": false,
+          "pnl": -2.691791552081073,
+          "hd": 0,
+          "exit": "stop"
+        },
+        {
+          "win": true,
+          "pnl": 20.92242408748288,
+          "hd": 0,
+          "exit": "target"
+        }
+      ]
+    },
+    "fitness": 9.23266401925391,
+    "mcPct": 100
+  },
+  {
+    "chromosome": {
+      "entrySignals": [
+        {
+          "type": "rsi_oversold",
+          "params": {
+            "period": 7,
+            "threshold": 20
+          }
+        },
+        {
+          "type": "volume_spike",
+          "params": {
+            "period": 20,
+            "multiplier": 1.5
+          }
+        }
+      ],
+      "logic": "AND",
+      "seqWin": 5,
+      "entryTiming": "next_open",
+      "targetPct": 4,
+      "stopPct": 1.5,
+      "trailingStop": true,
+      "trailingPct": 0.75,
+      "maxHoldDays": 7,
+      "phaseWeights": {
+        "accum": {
+          "atrMax": 1.5,
+          "atrW": 1,
+          "volMax": 0.8,
+          "volW": 1,
+          "maDistMax": 3,
+          "maW": 1
+        },
+        "markup": {
+          "minGreens": 3,
+          "greenW": 1,
+          "maBullMin": 2,
+          "maW": 1,
+          "atrMin": 1,
+          "atrW": 0.5
+        },
+        "dist": {
+          "maBullMin": 5,
+          "maW": 1,
+          "volMin": 1.1780938654584903,
+          "volW": 1,
+          "rsiMin": 60,
+          "rsiW": 1
+        },
+        "mark": {
+          "minReds": 3,
+          "redW": 1,
+          "maDistMax": -2,
+          "maW": 1,
+          "rsiMax": 45,
+          "rsiW": 1
+        },
+        "cap": {
+          "rsiMax": 30,
+          "rsiW": 2,
+          "volMin": 1.5,
+          "volW": 1,
+          "atrMin": 2,
+          "atrW": 1,
+          "maDistMax": -5,
+          "maW": 1
+        }
+      }
+    },
+    "train": {
+      "trades": 5,
+      "wr": 80,
+      "exp": 6.648,
+      "ret": 34.91,
+      "aw": 8.778,
+      "al": 1.872,
+      "sh": 0.787,
+      "rawTrades": [
+        {
+          "win": true,
+          "pnl": 5.056055683971601,
+          "hd": 5,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 2.108336850991977,
+          "hd": 7,
+          "exit": "timeout"
+        },
+        {
+          "win": false,
+          "pnl": -1.87238405696582,
+          "hd": 0,
+          "exit": "stop"
+        },
+        {
+          "win": true,
+          "pnl": 22.733210932225926,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 5.212486533934488,
+          "hd": 3,
+          "exit": "target"
+        }
+      ]
+    },
+    "test": {
+      "trades": 3,
+      "wr": 100,
+      "exp": 15.556,
+      "ret": 49.94,
+      "aw": 15.556,
+      "al": 0,
+      "sh": 1.033,
+      "rawTrades": [
+        {
+          "win": true,
+          "pnl": 4.661368306773691,
+          "hd": 0,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 36.84781389690354,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 5.159275036962679,
+          "hd": 1,
+          "exit": "target"
+        }
+      ]
+    },
+    "val": {
+      "trades": 8,
+      "wr": 62.5,
+      "exp": 4.345,
+      "ret": 36.16,
+      "aw": 8.744,
+      "al": 2.987,
+      "sh": 0.582,
+      "rawTrades": [
+        {
+          "win": true,
+          "pnl": 6.306920202649245,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 6.1073409702098225,
+          "hd": 0,
+          "exit": "target"
+        },
+        {
+          "win": false,
+          "pnl": -2.6642222838906595,
+          "hd": 1,
+          "exit": "stop"
+        },
+        {
+          "win": true,
+          "pnl": 4.91590757552444,
+          "hd": 1,
+          "exit": "target"
+        },
+        {
+          "win": true,
+          "pnl": 5.469028640384381,
+          "hd": 0,
+          "exit": "target"
+        },
+        {
+          "win": false,
+          "pnl": -3.603704435353964,
+          "hd": 0,
+          "exit": "stop"
+        },
+        {
+          "win": false,
+          "pnl": -2.691791552081073,
+          "hd": 0,
+          "exit": "stop"
+        },
+        {
+          "win": true,
+          "pnl": 20.92242408748288,
+          "hd": 0,
+          "exit": "target"
+        }
+      ]
+    },
+    "fitness": 9.23266401925391,
+    "mcPct": 100
+  }
+]

@@ -1,0 +1,207 @@
+{
+  "four_red_days": {
+    "name": "4 Red Days",
+    "description": "4 consecutive red days — 79-83% win rate, Sharpe 0.89-0.90",
+    "direction": "long",
+    "entryRules": {
+      "type": "consecutive",
+      "params": { "count": 4, "direction": "red" }
+    },
+    "params": {
+      "targetPct": 1,
+      "stopPct": 0.75,
+      "maxHoldDays": 5
+    }
+  },
+
+  "f2i1vk": {
+    "name": "Consecutive + Z-Score",
+    "description": "90% win rate, Sharpe 1.16 — consecutive red + z-score oversold",
+    "direction": "long",
+    "entryRules": {
+      "type": "and",
+      "conditions": [
+        { "type": "consecutive", "params": { "count": 2, "direction": "red" } },
+        { "type": "zscore", "params": { "period": 30, "compare": "<", "value": -1.5 } }
+      ]
+    },
+    "params": {
+      "targetPct": 1,
+      "stopPct": 0.5,
+      "maxHoldDays": 14
+    }
+  },
+
+  "eh3g6y": {
+    "name": "4 Red Days Tight",
+    "description": "82.8% win rate, 3-day hold — 4 consecutive red days",
+    "direction": "long",
+    "entryRules": {
+      "type": "consecutive",
+      "params": { "count": 4, "direction": "red" }
+    },
+    "params": {
+      "targetPct": 1,
+      "stopPct": 0.75,
+      "maxHoldDays": 3
+    }
+  },
+
+  "emz7dv": {
+    "name": "Change + Consecutive",
+    "description": "67.9% win rate, +71.5% return — price change + red days",
+    "direction": "long",
+    "entryRules": {
+      "type": "and",
+      "conditions": [
+        { "type": "change", "params": { "periods": 7, "compare": "<", "value": 5 } },
+        { "type": "consecutive", "params": { "count": 3, "direction": "red" } }
+      ]
+    },
+    "params": {
+      "targetPct": 4,
+      "stopPct": 1,
+      "maxHoldDays": 3
+    }
+  },
+
+  "wp1xga": {
+    "name": "Consecutive Medium",
+    "description": "74.1% win rate, +53.7% return — 4 red days, 2% target",
+    "direction": "long",
+    "entryRules": {
+      "type": "consecutive",
+      "params": { "count": 4, "direction": "red" }
+    },
+    "params": {
+      "targetPct": 2,
+      "stopPct": 1.5,
+      "maxHoldDays": 7
+    }
+  },
+
+  "qpmcb7": {
+    "name": "Z-Score + Consecutive",
+    "description": "72.2% win rate, Sharpe 0.55",
+    "direction": "long",
+    "entryRules": {
+      "type": "and",
+      "conditions": [
+        { "type": "zscore", "params": { "period": 30, "compare": "<", "value": -1.5 } },
+        { "type": "consecutive", "params": { "count": 2, "direction": "red" } }
+      ]
+    },
+    "params": {
+      "targetPct": 3,
+      "stopPct": 2.5,
+      "maxHoldDays": 3
+    }
+  },
+
+  "01en2w": {
+    "name": "RSI + Change + Consecutive",
+    "description": "73.7% win rate, Sharpe 0.70",
+    "direction": "long",
+    "entryRules": {
+      "type": "and",
+      "conditions": [
+        { "type": "rsi", "params": { "period": 14, "compare": "<", "value": 30 } },
+        { "type": "change", "params": { "periods": 5, "compare": "<", "value": 3 } },
+        { "type": "consecutive", "params": { "count": 2, "direction": "red" } }
+      ]
+    },
+    "params": {
+      "targetPct": 1,
+      "stopPct": 0.75,
+      "maxHoldDays": 10
+    }
+  },
+
+  "152w03": {
+    "name": "Z-Score + Volume",
+    "description": "70% win rate, +49.3% return",
+    "direction": "long",
+    "entryRules": {
+      "type": "and",
+      "conditions": [
+        { "type": "zscore", "params": { "period": 30, "compare": "<", "value": -1.5 } },
+        { "type": "volume", "params": { "period": 14, "compare": ">", "multiplier": 1.5 } }
+      ]
+    },
+    "params": {
+      "targetPct": 4,
+      "stopPct": 2.5,
+      "maxHoldDays": 7
+    }
+  },
+
+  "gqajp3": {
+    "name": "Volume + Z-Score",
+    "description": "70% win rate, +52.7% return",
+    "direction": "long",
+    "entryRules": {
+      "type": "and",
+      "conditions": [
+        { "type": "volume", "params": { "period": 14, "compare": ">", "multiplier": 2 } },
+        { "type": "zscore", "params": { "period": 30, "compare": "<", "value": -1.5 } }
+      ]
+    },
+    "params": {
+      "targetPct": 4,
+      "stopPct": 2.5,
+      "maxHoldDays": 14
+    }
+  },
+
+  "zscore_reversion": {
+    "name": "Z-Score Reversion",
+    "description": "57-62% win rate, most trades (80+)",
+    "direction": "long",
+    "entryRules": {
+      "type": "zscore",
+      "params": { "period": 30, "compare": "<", "value": -1 }
+    },
+    "params": {
+      "targetPct": 1,
+      "stopPct": 0.75,
+      "maxHoldDays": 3
+    }
+  },
+
+  "three_red": {
+    "name": "Three Red Days",
+    "description": "3 consecutive red days with minimum 3% drop — baseline",
+    "direction": "long",
+    "entryRules": {
+      "type": "and",
+      "conditions": [
+        { "type": "consecutive", "params": { "count": 3, "direction": "red" } },
+        { "type": "change", "params": { "periods": 3, "compare": "<=", "value": -3 } }
+      ]
+    },
+    "params": {
+      "targetPct": 2,
+      "stopPct": 1.5,
+      "maxHoldDays": 3
+    }
+  },
+
+  "three_red_volume_filter": {
+    "name": "Three Red + Volume",
+    "description": "77% win rate, volume confirmation",
+    "direction": "long",
+    "entryRules": {
+      "type": "and",
+      "conditions": [
+        { "type": "consecutive", "params": { "count": 3, "direction": "red" } },
+        { "type": "change", "params": { "periods": 3, "compare": "<=", "value": -3 } },
+        { "type": "volume", "params": { "period": 14, "compare": ">", "multiplier": 1.5 } }
+      ]
+    },
+    "params": {
+      "targetPct": 2,
+      "stopPct": 1.5,
+      "maxHoldDays": 3
+    }
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "optimal": {
+    "smart_btc": 100,
+    "link": 0,
+    "four_red_original": 0,
+    "four_red_optimized": 0
+  },
+  "expectedReturn": 45.94188684131271,
+  "allTop10": [
+    {
+      "alloc": {
+        "smart_btc": 100,
+        "link": 0,
+        "four_red_original": 0,
+        "four_red_optimized": 0
+      },
+      "return": 45.94188684131271
+    },
+    {
+      "alloc": {
+        "smart_btc": 95,
+        "link": 5,
+        "four_red_original": 0,
+        "four_red_optimized": 0
+      },
+      "return": 45.367463943116455
+    },
+    {
+      "alloc": {
+        "smart_btc": 90,
+        "link": 10,
+        "four_red_original": 0,
+        "four_red_optimized": 0
+      },
+      "return": 44.7930410449202
+    },
+    {
+      "alloc": {
+        "smart_btc": 95,
+        "link": 0,
+        "four_red_original": 5,
+        "four_red_optimized": 0
+      },
+      "return": 44.68711985393299
+    },
+    {
+      "alloc": {
+        "smart_btc": 95,
+        "link": 0,
+        "four_red_original": 0,
+        "four_red_optimized": 5
+      },
+      "return": 44.55103449954198
+    },
+    {
+      "alloc": {
+        "smart_btc": 85,
+        "link": 15,
+        "four_red_original": 0,
+        "four_red_optimized": 0
+      },
+      "return": 44.218618146723934
+    },
+    {
+      "alloc": {
+        "smart_btc": 90,
+        "link": 5,
+        "four_red_original": 5,
+        "four_red_optimized": 0
+      },
+      "return": 44.11269695573674
+    },
+    {
+      "alloc": {
+        "smart_btc": 90,
+        "link": 5,
+        "four_red_original": 0,
+        "four_red_optimized": 5
+      },
+      "return": 43.976611601345724
+    },
+    {
+      "alloc": {
+        "smart_btc": 80,
+        "link": 20,
+        "four_red_original": 0,
+        "four_red_optimized": 0
+      },
+      "return": 43.64419524852768
+    },
+    {
+      "alloc": {
+        "smart_btc": 85,
+        "link": 10,
+        "four_red_original": 5,
+        "four_red_optimized": 0
+      },
+      "return": 43.53827405754048
+    }
+  ]
+}

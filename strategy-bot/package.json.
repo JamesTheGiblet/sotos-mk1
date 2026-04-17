@@ -1,0 +1,14 @@
+cat > package.json << 'EOF'
+{
+  "name": "strategy-bot",
+  "version": "1.0.0",
+  "description": "Autonomous strategy generator based on market conditions",
+  "main": "index.js",
+  "scripts": {
+    "start": "node cli.js",
+    "status": "node cli.js status",
+    "generate": "node cli.js generate"
+  },
+  "dependencies": {}
+}
+EOF
