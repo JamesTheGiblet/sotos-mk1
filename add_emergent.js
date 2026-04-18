@@ -2,7 +2,7 @@ const fs = require('fs');
 const d = JSON.parse(fs.readFileSync('scp-capsule-share.json', 'utf8'));
 
 if (!d.pending_integrations) d.pending_integrations = [];
-
+ 
 d.pending_integrations.push({
   name: 'emergent-stock-monitor',
   description: 'Physics-based market visualisation — Adaptive Market Particle System built on Forge Theory',
