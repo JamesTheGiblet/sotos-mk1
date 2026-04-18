@@ -404,7 +404,7 @@ const specificPath = capsuleFlag !== -1 ? args[capsuleFlag + 1] : null;
 validate(specificPath).catch(console.error);
 
 // Add to top of file after requires
-const ARCHIVE_FILE = path.join(__dirname, 'strategy_archive.json');
+const ARCHIVE_FILE = path.join(__dirname, 'reasoning-bot', 'data', 'strategy_archive.json');
 
 // Add this function to load archive
 function loadArchive() {
