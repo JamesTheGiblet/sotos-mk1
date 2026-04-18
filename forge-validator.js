@@ -319,11 +319,12 @@ function findHypothesisCapsules(targetPath) {
 // ── Main ───────────────────────────────────────────────────────────────────────
 
 async function validate(specificCapsulePath) {
-  console.log('FORGE VALIDATOR (80/20 Split)');
-  console.log('='.repeat(50));
+  console.log('\n' + '═'.repeat(50));
+  console.log('⚖️  FORGE VALIDATOR (80/20 Split)');
+  console.log('═'.repeat(50));
   console.log('   Gate:   WR >= ' + MIN_WIN_RATE + '% | Return > ' + MIN_RETURN + '% | Trades >= ' + MIN_TRADES);
   console.log('   Split:  80% backtest / 20% forward — both must pass');
-  console.log('='.repeat(50));
+  console.log('═'.repeat(50));
 
   console.log('\n   Loading candle data...');
   const candles = await loadCandles('BTC/USD', '1D', 721);
@@ -350,7 +351,7 @@ async function validate(specificCapsulePath) {
   for (const item of toTest) {
     const capsule = item.data;
     const name    = (capsule.manifest && capsule.manifest.name) || (capsule.asset && capsule.asset.name) || item.id;
-    console.log('Testing: ' + name);
+    console.log('   🧪 Testing: ' + name);
 
     const backtest = simulate(capsule, trainData);
     const forward  = simulate(capsule, forwardData);
@@ -364,7 +365,7 @@ async function validate(specificCapsulePath) {
     const reason    = didPass
       ? 'BT: ' + btResult.reason + ' | FWD: ' + fwdResult.reason
       : (!btResult.passed ? 'Backtest: ' + btResult.reason : 'Forward: ' + fwdResult.reason);
-    const icon      = didPass ? 'PASSED' : 'FAILED';
+    const icon      = didPass ? '✅ PASSED' : '❌ FAILED';
 
     console.log('   ' + icon + ' — ' + reason);
 
@@ -387,105 +388,18 @@ async function validate(specificCapsulePath) {
       const exitRules  = (capsule.semantic_context && capsule.semantic_context.exit_rules)  || [];
       saveFailure(item.id, name, backtest, reason, entryRules, exitRules);
       cs.recordStrategyValidation(name, 'failed', parseFloat(backtest.win_rate), parseFloat(backtest.backtest_return), backtest.total_trades, 'UNKNOWN', reason);
-      console.log('   Failure recorded.');
+      console.log('   📝 Failure recorded.');
     }
     console.log();
   }
 
-  console.log('='.repeat(50));
-  console.log('   Complete: ' + passed + ' passed, ' + failed + ' failed.');
-  if (passed > 0) console.log('   ' + passed + ' strategy/strategies added to pool with forward validation.');
-  console.log('='.repeat(50));
+  console.log('═'.repeat(50));
+  console.log('   🏁 Complete: ' + passed + ' passed, ' + failed + ' failed.');
+  if (passed > 0) console.log('   🎉 ' + passed + ' strategy/strategies added to pool with forward validation.');
+  console.log('═'.repeat(50) + '\n');
 }
 
 const args         = process.argv.slice(2);
 const capsuleFlag  = args.indexOf('--capsule');
 const specificPath = capsuleFlag !== -1 ? args[capsuleFlag + 1] : null;
 validate(specificPath).catch(console.error);
-
-// Add to top of file after requires
-const ARCHIVE_FILE = path.join(__dirname, 'reasoning-bot', 'data', 'strategy_archive.json');
-
-// Add this function to load archive
-function loadArchive() {
-  if (!fs.existsSync(ARCHIVE_FILE)) {
-    return { archived_strategies: [], summary: { total_archived: 0 } };
-  }
-  return JSON.parse(fs.readFileSync(ARCHIVE_FILE, 'utf8'));
-}
-
-// Add this function to save to archive
-function archiveStrategy(strategy, result, reason) {
-  const archive = loadArchive();
-  
-  const archivedEntry = {
-    id: strategy.manifest?.id || `archived_${Date.now()}`,
-    name: strategy.manifest?.name || strategy.name || "Unknown Strategy",
-    archived_at: new Date().toISOString(),
-    reason: reason,
-    metrics: {
-      win_rate: result.backtest?.win_rate || result.win_rate,
-      return: result.backtest?.return || result.return,
-      trades: result.backtest?.trades || result.trades,
-      score: result.score,
-      grade: result.grade
-    },
-    regime: strategy.manifest?.marketFit?.bestRegime || "UNKNOWN",
-    parameters: strategy.manifest?.parameters || {},
-    entry_rules: strategy.strategy?.entryRules || {},
-    exit_rules: strategy.strategy?.exitRules || {}
-  };
-  
-  archive.archived_strategies.unshift(archivedEntry); // newest first
-  archive.last_updated = new Date().toISOString();
-  archive.summary.total_archived = archive.archived_strategies.length;
-  
-  // Update summary averages
-  const validArchives = archive.archived_strategies.filter(s => s.metrics.win_rate);
-  if (validArchives.length > 0) {
-    const totalWR = validArchives.reduce((sum, s) => sum + (s.metrics.win_rate || 0), 0);
-    const totalReturn = validArchives.reduce((sum, s) => sum + (s.metrics.return || 0), 0);
-    archive.summary.average_win_rate = totalWR / validArchives.length;
-    archive.summary.average_return = totalReturn / validArchives.length;
-  }
-  
-  // Update regime counts
-  archive.summary.by_regime = {
-    RANGING: archive.archived_strategies.filter(s => s.regime === "RANGING").length,
-    TRENDING_UP: archive.archived_strategies.filter(s => s.regime === "TRENDING_UP").length,
-    TRENDING_DOWN: archive.archived_strategies.filter(s => s.regime === "TRENDING_DOWN").length,
-    VOLATILE: archive.archived_strategies.filter(s => s.regime === "VOLATILE").length
-  };
-  
-  fs.writeFileSync(ARCHIVE_FILE, JSON.stringify(archive, null, 2));
-  console.log(`📦 Archived: ${archivedEntry.name} (${reason})`);
-  
-  return archive;
-}
-
-// Add function to get best strategy for a regime
-function getBestArchivedStrategy(regime) {
-  const archive = loadArchive();
-  const regimeStrategies = archive.archived_strategies.filter(s => s.regime === regime);
-  if (regimeStrategies.length === 0) return null;
-  
-  // Sort by score descending
-  regimeStrategies.sort((a, b) => (b.metrics.score || 0) - (a.metrics.score || 0));
-  return regimeStrategies[0];
-}
-
-// Add function to list archive
-function listArchive(limit = 10) {
-  const archive = loadArchive();
-  console.log(`\n📦 STRATEGY ARCHIVE (${archive.summary.total_archived} total)`);
-  console.log("═".repeat(70));
-  console.log(`  Avg WR: ${archive.summary.average_win_rate?.toFixed(1) || 0}% | Avg Return: ${archive.summary.average_return?.toFixed(1) || 0}%`);
-  console.log(`  By regime: R:${archive.summary.by_regime.RANGING} | U:${archive.summary.by_regime.TRENDING_UP} | D:${archive.summary.by_regime.TRENDING_DOWN} | V:${archive.summary.by_regime.VOLATILE}`);
-  console.log("─".repeat(70));
-  
-  const recent = archive.archived_strategies.slice(0, limit);
-  for (const s of recent) {
-    console.log(`  ${s.archived_at.split('T')[0]} | ${s.name.substring(0, 30)} | WR:${s.metrics.win_rate?.toFixed(1) || 0}% | Score:${s.metrics.score?.toFixed(0) || 0} | ${s.reason}`);
-  }
-  return archive;
-}

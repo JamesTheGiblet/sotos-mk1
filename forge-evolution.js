@@ -316,18 +316,40 @@ function addChampionToPool(champion, trainMetrics, forwardMetrics) {
 // ── Archive losers ─────────────────────────────────────────────────────────────
 
 function archiveLoser(individual, reason) {
-  let archive = [];
-  try { if (fs.existsSync(ARCHIVE_FILE)) archive = JSON.parse(fs.readFileSync(ARCHIVE_FILE, 'utf8')); } catch (e) {}
-  archive.unshift({
+  let archive = { version: "1.0.0", archived_strategies: [], summary: { total_archived: 0 } };
+  try {
+    if (fs.existsSync(ARCHIVE_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(ARCHIVE_FILE, 'utf8'));
+      if (Array.isArray(parsed)) archive.archived_strategies = parsed;
+      else archive = parsed;
+    }
+  } catch (e) {}
+
+  if (!archive.archived_strategies) archive.archived_strategies = [];
+
+  archive.archived_strategies.unshift({
     id:          individual.id,
+    name:        'EVO ' + (AGENT_TYPES[individual.agentType]?.name || individual.agentType),
     agent_type:  individual.agentType,
     params:      individual.params,
     fitness:     individual.fitness || 0,
+    metrics: {
+      win_rate: individual.trainMetrics?.win_rate || 0,
+      return:   individual.trainMetrics?.backtest_return || 0,
+      trades:   individual.trainMetrics?.total_trades || 0
+    },
     reason,
     archived_at: new Date().toISOString()
   });
+
+  archive.summary = archive.summary || {};
+  archive.summary.total_archived = archive.archived_strategies.length;
+  archive.last_updated = new Date().toISOString();
+
+  archive.archived_strategies = archive.archived_strategies.slice(0, 100);
+
   fs.mkdirSync(path.dirname(ARCHIVE_FILE), { recursive: true });
-  fs.writeFileSync(ARCHIVE_FILE, JSON.stringify(archive.slice(0, 100), null, 2));
+  fs.writeFileSync(ARCHIVE_FILE, JSON.stringify(archive, null, 2));
 }
 
 // ── Data ───────────────────────────────────────────────────────────────────────
@@ -358,14 +380,15 @@ async function evolve(generations, populationSize) {
   generations    = generations    || GENERATIONS;
   populationSize = populationSize || POPULATION_SIZE;
 
-  console.log('FORGE EVOLUTION ENGINE');
-  console.log('='.repeat(50));
+  console.log('\n' + '═'.repeat(50));
+  console.log('🧬 FORGE EVOLUTION ENGINE');
+  console.log('═'.repeat(50));
   console.log('   Generations:  ' + generations);
   console.log('   Population:   ' + populationSize);
   console.log('   Agent types:  ' + Object.keys(AGENT_TYPES).join(', '));
   console.log('   Elimination:  ' + (ELIMINATION_RATE * 100) + '% per generation');
   console.log('   Mutation:     ' + (MUTATION_RATE * 100) + '% rate, ' + (MUTATION_STRENGTH * 100) + '% strength');
-  console.log('='.repeat(50));
+  console.log('═'.repeat(50));
 
   // Load data
   console.log('\n   Loading candle data...');
@@ -383,8 +406,8 @@ async function evolve(generations, populationSize) {
 
   // Evolution loop
   for (let gen = 1; gen <= generations; gen++) {
-    console.log('\nGENERATION ' + gen + '/' + generations);
-    console.log('-'.repeat(40));
+    console.log('\n🔥 GENERATION ' + gen + '/' + generations);
+    console.log('─'.repeat(40));
 
     // Evaluate each individual
     let evaluated = 0;
@@ -406,8 +429,8 @@ async function evolve(generations, populationSize) {
     const best       = population[0];
     const avgFitness = Math.round(population.reduce((a, b) => a + (b.fitness || 0), 0) / population.length * 10) / 10;
 
-    console.log('   Best:    ' + AGENT_TYPES[best.agentType].name + ' — fitness ' + best.fitness + ' | WR: ' + best.trainMetrics.win_rate + '% | Return: +' + best.trainMetrics.backtest_return + '%');
-    console.log('   Passing: ' + passing.length + '/' + population.length + ' | Avg fitness: ' + avgFitness);
+    console.log('   🏆 Best:    ' + AGENT_TYPES[best.agentType].name + ' — fitness ' + best.fitness + ' | WR: ' + best.trainMetrics.win_rate + '% | Return: +' + best.trainMetrics.backtest_return + '%');
+    console.log('   📈 Passing: ' + passing.length + '/' + population.length + ' | Avg fitness: ' + avgFitness);
 
     evolutionLog.push({
       generation:  gen,
@@ -433,7 +456,7 @@ async function evolve(generations, populationSize) {
 
   // Champion — forward validate the best
   const champion = population[0];
-  console.log('\nCHAMPION: ' + AGENT_TYPES[champion.agentType].name);
+  console.log('\n👑 CHAMPION: ' + AGENT_TYPES[champion.agentType].name);
   console.log('   Params: ' + JSON.stringify(champion.params));
 
   console.log('\n   Running forward validation...');
@@ -446,10 +469,10 @@ async function evolve(generations, populationSize) {
   const passed = champion.fitness > 0 && forwardScore > 0;
 
   if (passed) {
-    console.log('\n   CHAMPION PASSED — adding to strategy pool');
+    console.log('\n   ✅ CHAMPION PASSED — adding to strategy pool');
     addChampionToPool(champion, champion.trainMetrics, forwardMetrics);
   } else {
-    console.log('\n   Champion failed forward validation — archiving');
+    console.log('\n   ❌ Champion failed forward validation — archiving');
     archiveLoser(champion, 'Failed forward validation — forward score: ' + forwardScore);
   }
 
@@ -458,11 +481,11 @@ async function evolve(generations, populationSize) {
   fs.mkdirSync(path.dirname(EVOLUTION_LOG), { recursive: true });
   fs.writeFileSync(EVOLUTION_LOG, JSON.stringify(log, null, 2));
 
-  console.log('\n' + '='.repeat(50));
+  console.log('\n' + '═'.repeat(50));
   console.log('   Evolution complete.');
   if (passed) console.log('   Champion added to selector pool.');
   console.log('   Log saved to: ' + EVOLUTION_LOG);
-  console.log('='.repeat(50));
+  console.log('═'.repeat(50));
 }
 
 // ── Entry ──────────────────────────────────────────────────────────────────────

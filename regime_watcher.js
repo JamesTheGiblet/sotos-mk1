@@ -76,10 +76,26 @@ function saveState(state) {
 // ── Archive ────────────────────────────────────────────────────────────────────
 
 function archiveStrategy(strategy, reason) {
-  let archive = [];
-  try { if (fs.existsSync(ARCHIVE_FILE)) archive = JSON.parse(fs.readFileSync(ARCHIVE_FILE, 'utf8')); } catch (e) {}
-  archive.unshift({ ...strategy, archived_at: new Date().toISOString(), archive_reason: reason });
-  fs.writeFileSync(ARCHIVE_FILE, JSON.stringify(archive.slice(0, 50), null, 2));
+  let archive = { version: "1.0.0", archived_strategies: [], summary: { total_archived: 0 } };
+  try {
+    if (fs.existsSync(ARCHIVE_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(ARCHIVE_FILE, 'utf8'));
+      if (Array.isArray(parsed)) archive.archived_strategies = parsed;
+      else archive = parsed;
+    }
+  } catch (e) {}
+
+  if (!archive.archived_strategies) archive.archived_strategies = [];
+
+  archive.archived_strategies.unshift({ ...strategy, archived_at: new Date().toISOString(), reason: reason });
+  
+  archive.summary = archive.summary || {};
+  archive.summary.total_archived = archive.archived_strategies.length;
+  archive.last_updated = new Date().toISOString();
+  archive.archived_strategies = archive.archived_strategies.slice(0, 100);
+
+  fs.mkdirSync(path.dirname(ARCHIVE_FILE), { recursive: true });
+  fs.writeFileSync(ARCHIVE_FILE, JSON.stringify(archive, null, 2));
   console.log('   📦 Archived: ' + strategy.name + ' — ' + reason);
 }
 
@@ -113,13 +129,13 @@ function getCurrentStrategyScore() {
 // ── Trigger Forge ──────────────────────────────────────────────────────────────
 
 function triggerForge() {
-  console.log('\n   Triggering Forge auto loop...');
+  console.log('\n   ⚙️  Triggering Forge auto loop...');
   try {
     const output   = execSync('cd ' + BASE + ' && node forge_auto.js 5', { encoding: 'utf8', timeout: 300000 });
     const passed   = output.includes('SUCCESS');
     const nameLine = output.match(/\u2192 (.+)/);
-    const wrLine   = output.match(/WR:\s*([\d.]+)%/);
-    const retLine  = output.match(/Return:\s*([+-][\d.]+)%/);
+    const wrLine   = output.match(/([\d.]+)%\s*WR/i);
+    const retLine  = output.match(/([+-][\d.]+)%\s*return/i);
     if (passed && nameLine && wrLine && retLine) {
       const wr  = parseFloat(wrLine[1]);
       const ret = parseFloat(retLine[1]);
@@ -127,7 +143,7 @@ function triggerForge() {
     }
     return { passed: false };
   } catch (e) {
-    console.log('   Forge loop error: ' + e.message);
+    console.log('   ❌ Forge loop error: ' + e.message);
     return { passed: false, error: e.message };
   }
 }
@@ -135,12 +151,13 @@ function triggerForge() {
 // ── Main ───────────────────────────────────────────────────────────────────────
 
 async function watch() {
-  console.log('REGIME WATCHER');
-  console.log('='.repeat(50));
+  console.log('\n' + '═'.repeat(50));
+  console.log('📉 REGIME WATCHER');
+  console.log('═'.repeat(50));
   console.log('   Threshold: ' + REGIME_THRESHOLD + ' consecutive days in new regime');
 
   const candles = await loadCandles(200);
-  if (!candles.length) { console.log('   No candle data available'); return; }
+  if (!candles.length) { console.log('   ⚠️  No candle data available'); return; }
 
   // Calculate regime for last 3 daily candles
   const last3 = [];
@@ -149,7 +166,7 @@ async function watch() {
     last3.push({ regime: calcRegime(slice), date: new Date(candles[candles.length - 1 - i].timestamp * 1000).toISOString().slice(0, 10) });
   }
 
-  console.log('\n   Last 3 daily regimes:');
+  console.log('\n   📊 Last 3 daily regimes:');
   last3.forEach(d => console.log('   ' + d.date + ' — ' + d.regime));
 
   const state       = loadState();
@@ -157,18 +174,18 @@ async function watch() {
   const allSame     = last3.every(d => d.regime === todayRegime);
   const changed     = todayRegime !== state.current_regime && state.current_regime !== 'UNKNOWN';
 
-  console.log('\n   Stored regime: ' + state.current_regime);
-  console.log('   Today regime:  ' + todayRegime);
+  console.log('\n   💾 Stored regime: ' + state.current_regime);
+  console.log('   📅 Today regime:  ' + todayRegime);
 
   if (!allSame) {
-    console.log('   Regime not stable for 3 days yet — watching');
+    console.log('   ⏳ Regime not stable for 3 days yet — watching');
     state.last_checked = new Date().toISOString();
     saveState(state);
     return;
   }
 
   if (!changed) {
-    console.log('   Regime stable — no change');
+    console.log('   ✅ Regime stable — no change');
     state.current_regime = todayRegime;
     state.last_checked   = new Date().toISOString();
     saveState(state);
@@ -176,22 +193,26 @@ async function watch() {
   }
 
   // Confirmed regime change
-  console.log('\n   REGIME CHANGE: ' + state.current_regime + ' to ' + todayRegime);
-  console.log('   Stable 3 days. Generating new strategy...');
+  console.log('\n   🚨 REGIME CHANGE: ' + state.current_regime + ' to ' + todayRegime);
+  console.log('   ⚡ Stable 3 days. Generating new strategy...');
+
+  // Record to ChronoScribe
+  const currentPrice = candles[candles.length - 1].close;
+  cs.recordRegimeChange(state.current_regime, todayRegime, 3, currentPrice);
 
   const current = getCurrentStrategyScore();
-  console.log('   Current strategy: ' + current.name + ' (score: ' + current.score + ')');
+  console.log('   🧠 Current strategy: ' + current.name + ' (score: ' + current.score + ')');
 
   const result = triggerForge();
 
   if (!result.passed) {
-    console.log('   Forge did not produce a passing strategy — keeping current');
+    console.log('   ⚠️  Forge did not produce a passing strategy — keeping current');
   } else {
-    console.log('   New strategy: ' + result.name + ' (score: ' + result.score + ')');
+    console.log('   ✨ New strategy: ' + result.name + ' (score: ' + result.score + ')');
     if (result.score > current.score) {
-      console.log('   New strategy wins (' + result.score + ' vs ' + current.score + ') — replaced in pool');
+      console.log('   🏆 New strategy wins (' + result.score + ' vs ' + current.score + ') — replaced in pool');
     } else {
-      console.log('   New strategy loses (' + result.score + ' vs ' + current.score + ') — archiving');
+      console.log('   🗑️  New strategy loses (' + result.score + ' vs ' + current.score + ') — archiving');
       archiveStrategy({ name: result.name, score: result.score, regime: todayRegime },
         'Lower score than current (' + result.score + ' vs ' + current.score + ')');
     }
@@ -201,7 +222,7 @@ async function watch() {
   state.last_trigger   = new Date().toISOString();
   state.last_checked   = new Date().toISOString();
   saveState(state);
-  console.log('\n' + '='.repeat(50));
+  console.log('\n' + '═'.repeat(50));
 }
 
 watch().catch(console.error);

@@ -35,7 +35,7 @@ function getPM2() {
   try {
     return JSON.parse(execSync('pm2 jlist', { encoding: 'utf8' })).map(p => ({
       name: p.name, status: p.pm2_env.status,
-      memory: Math.round(p.monit.memory / 1024 / 1024)
+      memory: Math.round((p.monit?.memory || 0) / 1024 / 1024)
     }));
   } catch(e) { return []; }
 }
@@ -494,9 +494,10 @@ init();
 </html>`; }
 
 server.listen(PORT, () => {
-  console.log('S.O.T.O.S DASHBOARD');
-  console.log('='.repeat(40));
-  console.log('http://localhost:' + PORT);
-  console.log('Gemini: ' + (process.env.GEMINI_API_KEY ? 'configured' : 'NOT configured'));
-  console.log('='.repeat(40));
+  console.log('\n' + '═'.repeat(50));
+  console.log('🔮 S.O.T.O.S DASHBOARD — GOLEM v3 ACTIVE');
+  console.log('═'.repeat(50));
+  console.log('📍 URL:    http://localhost:' + PORT);
+  console.log('🧠 Gemini: ' + (process.env.GEMINI_API_KEY ? '✅ Configured (gemini-2.5-flash)' : '❌ NOT configured'));
+  console.log('═'.repeat(50) + '\n');
 });

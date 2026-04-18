@@ -42,6 +42,7 @@ const REMOVE_EXACT = [
   'scp-capsule-share.json',
   'cli.js',
   'golem.js',
+  'server.js',
 
   // Temp output
   'collect_output.log',
@@ -123,13 +124,18 @@ for (const dir of DIRS_TO_SCRUB) {
   const files = fs.readdirSync(dir);
   for (const file of files) {
     const fullPath = path.join(dir, file);
-    if (fs.statSync(fullPath).isFile()) {
-      const matchesScrub = SCRUB_EXTENSIONS.some(suffix => file.endsWith(suffix));
-      if (matchesScrub) {
-        fs.unlinkSync(fullPath);
-        console.log(`🗑️  Scrubbed: ${path.relative(__dirname, fullPath)}`);
-        removed++;
-      }
+      try {
+        // Use lstatSync to prevent crashing on broken symlinks
+        if (fs.lstatSync(fullPath).isFile()) {
+          const matchesScrub = SCRUB_EXTENSIONS.some(suffix => file.endsWith(suffix));
+          if (matchesScrub) {
+            fs.unlinkSync(fullPath);
+            console.log(`🗑️  Scrubbed: ${path.relative(__dirname, fullPath)}`);
+            removed++;
+          }
+        }
+      } catch (e) {
+        // Skip files that can't be stat-ed (like broken symlinks)
     }
   }
 }
@@ -190,7 +196,6 @@ console.log('\nActive system files:');
   'forge-evolution.js',
   'collect.js',
   'analyse.js',
-  'server.js',
   'scp-auto-updater.js',
   'chronoscribe.js',
   'regime_watcher.js'

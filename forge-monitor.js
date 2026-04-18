@@ -191,7 +191,7 @@ function checkPair(pair, currentPrice, candles, rules, log, ts) {
   if (!pos) {
     if (!rules.entryRules.length) return;
 
-    const entryMet = rules.entryRules.every(function(r) { return evaluateRule(r, candles, currentPrice); });
+    const entryMet = rules.entryRules.every(r => evaluateRule(r, candles, currentPrice));
     if (entryMet) {
       log.positions[pair] = {
         entered_at:   ts,
@@ -200,22 +200,27 @@ function checkPair(pair, currentPrice, candles, rules, log, ts) {
         stop_price:   Math.round(currentPrice * (1 - rules.stopPct   / 100) * 100) / 100,
         max_exit:     new Date(Date.now() + rules.maxHold * 24 * 60 * 60 * 1000).toISOString()
       };
-      console.log('   DRY RUN ENTRY ' + label + ' @ $' + currentPrice.toLocaleString() + ' | Target: $' + log.positions[pair].target_price.toLocaleString() + ' | Stop: $' + log.positions[pair].stop_price.toLocaleString());
+      console.log(`\n   🟢 DRY RUN ENTRY: ${label} @ $${currentPrice.toLocaleString()}`);
+      console.log(`      Target: $${log.positions[pair].target_price.toLocaleString()} (+${rules.targetPct}%)`);
+      console.log(`      Stop:   $${log.positions[pair].stop_price.toLocaleString()} (-${rules.stopPct}%)`);
     }
   } else {
     const pnlPct    = Math.round((currentPrice - pos.entry_price) / pos.entry_price * 10000) / 100;
     const hitTarget = currentPrice >= pos.target_price;
     const hitStop   = currentPrice <= pos.stop_price;
     const hitTime   = new Date() >= new Date(pos.max_exit);
-    const hitExit   = rules.exitRules.length ? rules.exitRules.some(function(r) { return evaluateRule(r, candles, currentPrice); }) : false;
+    const hitExit   = rules.exitRules.length ? rules.exitRules.some(r => evaluateRule(r, candles, currentPrice)) : false;
 
     const pnlStr = (pnlPct >= 0 ? '+' : '') + pnlPct + '%';
-    console.log('   OPEN ' + label + ' @ $' + pos.entry_price.toLocaleString() + ' | Now: $' + currentPrice.toLocaleString() + ' | PnL: ' + pnlStr);
+    console.log(`\n   📊 OPEN POSITION: ${label}`);
+    console.log(`      Entry:   $${pos.entry_price.toLocaleString()}`);
+    console.log(`      Current: $${currentPrice.toLocaleString()}`);
+    console.log(`      P&L:     ${pnlStr}`);
 
     if (hitTarget || hitStop || hitTime || hitExit) {
       const reason = hitTarget ? 'take_profit' : hitStop ? 'stop_loss' : hitTime ? 'timeout' : 'exit_rule';
-      const icon   = pnlPct > 0 ? 'WIN' : 'LOSS';
-      console.log('   DRY RUN EXIT  ' + label + ' @ $' + currentPrice.toLocaleString() + ' ' + pnlStr + ' — ' + reason + ' (' + icon + ')');
+      const icon   = pnlPct > 0 ? '✅ WIN' : '❌ LOSS';
+      console.log(`\n   ${icon} DRY RUN EXIT: ${label} @ $${currentPrice.toLocaleString()} (${pnlStr}) — ${reason}`);
       log.trades.push({ pair, entry_price: pos.entry_price, exit_price: currentPrice, pnl_pct: pnlPct, win: pnlPct > 0, reason, entered_at: pos.entered_at, exited_at: ts });
       delete log.positions[pair];
     }
@@ -226,10 +231,10 @@ function checkPair(pair, currentPrice, candles, rules, log, ts) {
 
 async function check() {
   const ts = new Date().toISOString();
-  console.log('\n[' + new Date().toLocaleTimeString() + '] Checking...');
+  console.log(`\n[${new Date().toLocaleTimeString()}] Checking...`);
 
   if (!fs.existsSync(ACTIVE_STRATEGY)) {
-    console.log('   No active_strategy.json — run reasoning bot first.');
+    console.log('   ⚠️  No active_strategy.json — run reasoning bot first.');
     return;
   }
 
@@ -237,10 +242,10 @@ async function check() {
   const log    = loadLog();
   log.checks++;
 
-  console.log('   Strategy: ' + active.name);
+  console.log(`   🧠 Strategy: ${active.name}`);
 
   // Fetch all pair prices
-  const krakenPairs = Object.values(TRADING_PAIRS).map(function(p) { return p.kraken; });
+  const krakenPairs = Object.values(TRADING_PAIRS).map(p => p.kraken);
   let prices, btcCandles;
 
   try {
@@ -288,7 +293,7 @@ async function check() {
     // Entry triggered — check all pairs
     for (const pair of Object.keys(TRADING_PAIRS)) {
       const info   = TRADING_PAIRS[pair];
-      const ticker = info.tickers.reduce(function(found, key) { return found || prices[key]; }, null);
+      const ticker = info.tickers.reduce((found, key) => found || prices[key], null);
       if (!ticker) continue;
 
       // Fetch candles for this pair if not BTC
@@ -304,7 +309,7 @@ async function check() {
     for (const pair of Object.keys(log.positions)) {
       const info   = TRADING_PAIRS[pair];
       if (!info) continue;
-      const ticker = info.tickers.reduce(function(found, key) { return found || prices[key]; }, null);
+      const ticker = info.tickers.reduce((found, key) => found || prices[key], null);
       if (!ticker) continue;
 
       let pairCandles = btcCandles;
@@ -316,9 +321,9 @@ async function check() {
   }
 
   // Print running stats
-  const wins = log.trades.filter(function(t) { return t.win; }).length;
+  const wins = log.trades.filter(t => t.win).length;
   const wr   = log.trades.length ? Math.round(wins / log.trades.length * 100) : 0;
-  console.log('   Checks: ' + log.checks + ' | Trades: ' + log.trades.length + (log.trades.length ? ' | WR: ' + wr + '%' : ''));
+  console.log(`\n   📊 Stats: ${log.checks} checks | ${log.trades.length} trades` + (log.trades.length ? ` | WR: ${wr}%` : ''));
 
   saveLog(log);
 }
@@ -330,10 +335,12 @@ const once = process.argv.includes('--once');
 if (once) {
   check().catch(console.error);
 } else {
-  console.log('FORGE MONITOR — Multi-Pair Dry Run');
-  console.log('   Pairs: ' + Object.keys(TRADING_PAIRS).join(', '));
-  console.log('   Checking every ' + (POLL_INTERVAL_MS / 60000) + ' minutes');
-  console.log('   Ctrl+C to stop\n');
+  console.log('\n' + '═'.repeat(60));
+  console.log('🔍 FORGE MONITOR — Multi-Pair Dry Run');
+  console.log('═'.repeat(60));
+  console.log(`   Pairs:    ${Object.keys(TRADING_PAIRS).join(', ')}`);
+  console.log(`   Interval: ${POLL_INTERVAL_MS / 60000} minutes`);
+  console.log('   Press Ctrl+C to stop\n');
   check().catch(console.error);
-  setInterval(function() { check().catch(console.error); }, POLL_INTERVAL_MS);
+  setInterval(() => check().catch(console.error), POLL_INTERVAL_MS);
 }

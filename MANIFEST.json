@@ -1,23 +1,28 @@
 {
   "platform": "Adaptive Intelligence Platform",
-  "version": "1.0.0",
+  "version": "1.4.0",
   "philosophy": {
-    "pillars": ["Cost Control", "Security", "Quality", "Efficiency", "Freedom"],
+    "pillars": ["Cost Control", "Security", "Quality", "Efficiency", "Sovereignty"],
     "origin": "Built to solve developer workflow problems",
     "creator": "Giblets Creations"
   },
   "tools": [
-    { "name": "Kraken Intelligence", "status": "MVP_READY", "category": "Trading" },
+    { "name": "Kraken Intelligence", "status": "ACTIVE", "category": "Trading Intelligence" },
     { "name": "Whisper", "status": "MVP_READY", "category": "Security" },
     { "name": "Aegis", "status": "MVP_READY", "category": "Compliance" },
     { "name": "EmbedID", "status": "MVP_READY", "category": "Provenance" },
-    { "name": "MarkFlow", "status": "MVP_READY", "category": "Documentation" }
+    { "name": "MarkFlow", "status": "MVP_READY", "category": "Documentation" },
+    { "name": "CertiScope", "status": "IN_DEVELOPMENT", "category": "Web Credibility" },
+    { "name": "TreeCraft", "status": "IN_DEVELOPMENT", "category": "Project Structure" },
+    { "name": "Test Generator", "status": "IN_DEVELOPMENT", "category": "Testing" },
+    { "name": "Chameleon LM", "status": "IN_DEVELOPMENT", "category": "Domain Adaptation" },
+    { "name": "Praximous", "status": "CONCEPT", "category": "AI Agents" }
   ],
   "principles": [
-    "No cloud dependencies",
+    "No cloud dependencies — 100% local execution",
     "MIT License — free for commercial use",
     "Forward testing before validation",
     "Mandatory dry runs (30 days minimum)",
-    "SCP for strategy portability"
+    "SCP for semantic strategy portability"
   ]
 }

@@ -25,7 +25,7 @@ const fs     = require('fs');
 const path   = require('path');
 const crypto = require('crypto');
 
-const AUDIT_LOG = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/chronoscribe_audit.json');
+let   AUDIT_LOG = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/chronoscribe_audit.json');
 const OPERATOR  = 'JamesTheGiblet';
 const VERSION   = '1.0.0';
 
@@ -180,7 +180,7 @@ function audit(schemaFilter) {
     ? records.filter(r => r.schema === schemaFilter)
     : records;
 
-  console.log('CHRONOSCRIBE AUDIT');
+  console.log('📜 CHRONOSCRIBE AUDIT');
   console.log('='.repeat(50));
   console.log('Total records: ' + records.length);
 
@@ -191,8 +191,8 @@ function audit(schemaFilter) {
 
   // Verify integrity
   const result = verify();
-  console.log('\nIntegrity: ' + result.valid + '/' + result.total + ' valid');
-  if (result.invalid > 0) console.log('TAMPERED: ' + result.tampered.join(', '));
+  console.log('\n🛡️  Integrity: ' + result.valid + '/' + result.total + ' valid');
+  if (result.invalid > 0) console.log('🚨 TAMPERED: ' + result.tampered.join(', '));
 
   console.log('\n' + '='.repeat(50));
 
@@ -257,18 +257,20 @@ if (require.main === module) {
     audit(schema);
   } else if (cmd === '--verify') {
     const result = verify();
-    console.log('CHRONOSCRIBE VERIFY');
+    console.log('🔐 CHRONOSCRIBE VERIFY');
     console.log('Total:   ' + result.total);
     console.log('Valid:   ' + result.valid);
     console.log('Invalid: ' + result.invalid);
     if (result.invalid > 0) {
-      console.log('Tampered IDs:');
+      console.log('🚨 Tampered IDs:');
       result.tampered.forEach(id => console.log('  ' + id));
     } else {
-      console.log('All records intact.');
+      console.log('✅ All records intact.');
     }
   } else if (cmd === '--test') {
-    console.log('Testing ChronoScribe...\n');
+    console.log('🧪 Testing ChronoScribe (Using temporary test log)...\n');
+    AUDIT_LOG = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/test_audit.json');
+    if (fs.existsSync(AUDIT_LOG)) fs.unlinkSync(AUDIT_LOG); // Start fresh
 
     const e1 = recordStrategyValidation('H.E Mean Reversion Bollinger', 'passed', 56.3, 45.2, 16, 'RANGING', 'Passed: 56.3% WR, +45.2% return, 16 trades');
     console.log('Strategy validation recorded:', e1 ? e1.id : 'FAILED');

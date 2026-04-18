@@ -10,8 +10,8 @@ const DB_PATH = path.join(__dirname, 'data', 'intelligence.db');
 const INTERVALS = ['1D', '4H', '1H'];
 const INTERVAL_MINUTES = { '1D': 1440, '4H': 240, '1H': 60 };
 
-// Focused asset list
-const PAIRS = [
+// Default active trading pairs
+const defaultPairs = [
   'BTC/USD',
   'ETH/USD',
   'SOL/USD',
@@ -20,6 +20,9 @@ const PAIRS = [
   'DOGE/USD',
   'LTC/USD',
 ];
+
+// Allow passing custom pairs via CLI: node collect.js XAUT/USD
+const PAIRS = process.argv.length > 2 ? process.argv.slice(2) : defaultPairs;
 
 let db;
 let totalNewCandles = 0;
@@ -107,8 +110,8 @@ async function collectPair(pair) {
       calls++;
       try {
         const result = await getKrakenOHLC(pair, INTERVAL_MINUTES[interval], since);
-        const apiPair = pair.replace('/', '');
-        const candles = result[apiPair];
+        const dataKey = Object.keys(result).find(k => k !== 'last');
+        const candles = result[dataKey];
         
         if (!candles || candles.length === 0) {
           if (calls === 1) console.log(`  ⚠️ No data for ${interval}`);
@@ -172,6 +175,16 @@ async function main() {
     }
   }
   
+  if (totalNewCandles > 0) {
+    console.log('\n💾 Saving database to disk...');
+    const data = db.export();
+    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+    fs.writeFileSync(DB_PATH, Buffer.from(data));
+    console.log('✅ Database saved successfully');
+  } else {
+    console.log('\n✅ Database is up to date (no new candles to save)');
+  }
+
   db.close();
 }
 

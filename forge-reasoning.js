@@ -140,7 +140,7 @@ function loadFailures() {
     if (fs.existsSync(FAILURE_LOG)) {
       return JSON.parse(fs.readFileSync(FAILURE_LOG, 'utf8'))
         .slice(0, 3)
-        .map(function(f) {
+        .map(f => {
           return {
             name:     f.name,
             reason:   f.reason,
@@ -160,7 +160,7 @@ function getExistingIds() {
   try {
     const content  = fs.readFileSync(SELECTOR_PATH, 'utf8');
     const matches  = content.match(/'([a-z0-9_]+)':\s*\{/g) || [];
-    return matches.map(function(m) { return m.replace(/['{:\s]/g, ''); });
+    return matches.map(m => m.replace(/['{:\s]/g, ''));
   } catch (e) { return []; }
 }
 
@@ -168,18 +168,16 @@ function getExistingIds() {
 
 function selectTemplate(market, failures) {
   const allTemplates = Object.keys(TEMPLATES);
-  const regime       = market.regime;
-  const phase        = market.phase;
-  const sentiment    = market.sentiment;
+  const { regime, phase, sentiment } = market;
 
-  var used = [];
+  let used = [];
   try {
     if (fs.existsSync(USED_FILE)) {
       used = JSON.parse(fs.readFileSync(USED_FILE, 'utf8'));
     }
   } catch (e) {}
 
-  var candidates = [];
+  const candidates = [];
   if (sentiment === 'EXTREME_FEAR' || sentiment === 'FEAR')
     candidates.push('consecutive_red_rsi', 'oversold_bounce', 'mean_reversion_bollinger');
   if (regime === 'VOLATILE')
@@ -193,21 +191,21 @@ function selectTemplate(market, failures) {
   if (!candidates.length)
     candidates.push('mean_reversion_bollinger');
 
-  var recentFails = failures.map(function(f) { return f.name.toLowerCase(); });
-  var existingIds = getExistingIds().map(function(id) { return id.toLowerCase(); });
+  const recentFails = failures.map(f => f.name.toLowerCase());
+  const existingIds = getExistingIds().map(id => id.toLowerCase());
 
-  var filtered = candidates.filter(function(c) {
-    var exists  = existingIds.some(function(id) { return id.indexOf(c.replace(/_/g, '')) !== -1; });
-    var failed  = recentFails.some(function(fn) { return fn.indexOf(c.replace(/_/g, ' ')) !== -1; });
-    var usedNow = used.indexOf(c) !== -1;
+  const filtered = candidates.filter(c => {
+    const exists  = existingIds.some(id => id.includes(c.replace(/_/g, '')));
+    const failed  = recentFails.some(fn => fn.includes(c.replace(/_/g, ' ')));
+    const usedNow = used.includes(c);
     return !exists && !failed && !usedNow;
   });
 
-  var selected;
+  let selected;
   if (filtered.length) {
     selected = filtered[0];
   } else {
-    var unused = allTemplates.filter(function(t) { return used.indexOf(t) === -1; });
+    const unused = allTemplates.filter(t => !used.includes(t));
     selected   = unused.length ? unused[0] : allTemplates[Math.floor(Date.now() / 1000) % allTemplates.length];
   }
 
@@ -225,16 +223,14 @@ function selectTemplate(market, failures) {
 // ── Parameter tuning ───────────────────────────────────────────────────────────
 
 function tuneParameters(market, failures, history) {
-  var regime    = market.regime;
-  var phase     = market.phase;
-  var sentiment = market.sentiment;
+  const { regime, phase, sentiment } = market;
 
-  var baseTarget = history ? history.avgTarget : 13;
-  var baseStop   = history ? history.avgStop   : 5;
-  var baseHold   = history ? history.avgHold   : 10;
+  const baseTarget = history ? history.avgTarget : 13;
+  const baseStop   = history ? history.avgStop   : 5;
+  const baseHold   = history ? history.avgHold   : 10;
 
-  var params = {
-    regime:   regime,
+  const params = {
+    regime,
     redDays:  3,
     rsiEntry: 35,
     rsiExit:  55,
@@ -272,8 +268,7 @@ function tuneParameters(market, failures, history) {
     params.rsiExit  = 70;
   }
 
-  for (var i = 0; i < failures.length; i++) {
-    var f = failures[i];
+  for (const f of failures) {
     if (f.win_rate > 50 && f.ret < 0) {
       params.target = Math.min(params.target * 1.3, 25);
       params.hold   = Math.min(params.hold + 2, 14);
@@ -299,11 +294,11 @@ function tuneParameters(market, failures, history) {
 // ── Build capsule ──────────────────────────────────────────────────────────────
 
 function buildCapsule(hypothesis, market, failures) {
-  var id        = 'hyp_' + hypothesis.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + Date.now().toString(36);
-  var hash      = crypto.createHash('sha256').update(id).digest('hex').slice(0, 16);
-  var timestamp = new Date().toISOString();
-  var failNote  = failures.length
-    ? 'Learned from ' + failures.length + ' failure(s): ' + failures.map(function(f) { return f.reason; }).join('; ')
+  const id        = 'hyp_' + hypothesis.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + Date.now().toString(36);
+  const hash      = crypto.createHash('sha256').update(id).digest('hex').slice(0, 16);
+  const timestamp = new Date().toISOString();
+  const failNote  = failures.length
+    ? 'Learned from ' + failures.length + ' failure(s): ' + failures.map(f => f.reason).join('; ')
     : 'No prior failures.';
 
   return {
@@ -346,12 +341,13 @@ function buildCapsule(hypothesis, market, failures) {
 // ── Main ───────────────────────────────────────────────────────────────────────
 
 async function reason(dryRun) {
+  console.log('\n' + '═'.repeat(50));
   console.log('🧠 FORGE REASONING ENGINE');
-  console.log('='.repeat(50));
+  console.log('═'.repeat(50));
 
   console.log('👁️  Analysing market state...');
-  var analyser = new MarketAnalyser();
-  var market   = await analyser.analyse();
+  const analyser = new MarketAnalyser();
+  const market   = await analyser.analyse();
   console.log('   Regime:     ' + market.regime);
   console.log('   Phase:      ' + market.phase);
   console.log('   Sentiment:  ' + market.sentiment);
@@ -359,7 +355,7 @@ async function reason(dryRun) {
   console.log('   BTC:        $' + (market.btcPrice || 0).toLocaleString());
 
   console.log('\n📊 Loading performance history...');
-  var history = loadPerformanceHistory();
+  const history = loadPerformanceHistory();
   if (history) {
     console.log('   ' + history.count + ' validated strategies');
     console.log('   Weighted avg — target: +' + history.avgTarget + '% | stop: -' + history.avgStop + '% | hold: ' + history.avgHold + 'd');
@@ -369,17 +365,17 @@ async function reason(dryRun) {
   }
 
   console.log('\n📚 Loading failure memory...');
-  var failures = loadFailures();
+  const failures = loadFailures();
   if (failures.length) {
-    failures.forEach(function(f) { console.log('   • ' + f.name + ' — ' + f.reason); });
+    failures.forEach(f => console.log('   • ' + f.name + ' — ' + f.reason));
   } else {
     console.log('   No failures recorded.');
   }
 
   console.log('\n⚡ Synthesising hypothesis...');
-  var templateKey = selectTemplate(market, failures);
-  var params      = tuneParameters(market, failures, history);
-  var hypothesis  = TEMPLATES[templateKey](params);
+  const templateKey = selectTemplate(market, failures);
+  const params      = tuneParameters(market, failures, history);
+  const hypothesis  = TEMPLATES[templateKey](params);
 
   console.log('   Template:    ' + templateKey);
   console.log('   Name:        ' + hypothesis.name);
@@ -387,7 +383,7 @@ async function reason(dryRun) {
   console.log('   Exit rules:  ' + hypothesis.exit_rules.join(' OR '));
   console.log('   Stop: -' + params.stop + '%  Target: +' + params.target + '%  Hold: ' + params.hold + 'd');
 
-  var capsule = buildCapsule(hypothesis, market, failures);
+  const capsule = buildCapsule(hypothesis, market, failures);
 
   if (dryRun) {
     console.log('\n📋 DRY RUN — not saving');
@@ -395,16 +391,16 @@ async function reason(dryRun) {
     return;
   }
 
-  var dir  = path.join(SCP_PATH, capsule.manifest.id);
+  const dir  = path.join(SCP_PATH, capsule.manifest.id);
   fs.mkdirSync(dir, { recursive: true });
-  var file = path.join(dir, 'capsule.json');
+  const file = path.join(dir, 'capsule.json');
   fs.writeFileSync(file, JSON.stringify(capsule, null, 2));
 
   console.log('\n💾 Saved: ' + file);
   console.log('   ID: ' + capsule.manifest.id);
   console.log('\n▶️  Run validator: node forge-validator.js');
-  console.log('='.repeat(50));
+  console.log('═'.repeat(50));
 }
 
-var dryRun = process.argv.indexOf('--dry-run') !== -1;
+const dryRun = process.argv.includes('--dry-run');
 reason(dryRun).catch(console.error);

@@ -66,13 +66,14 @@ class SCPAutoUpdater {
   }
 
   // Get candle count
-  getCandleCount() {
+  async getCandleCount() {
     try {
       const dbPath = path.join(__dirname, 'data/intelligence.db');
       if (fs.existsSync(dbPath)) {
-        const sqlite3 = require('sql.js');
+        const initSqlJs = require('sql.js');
+        const SQL = await initSqlJs();
         const dbBuffer = fs.readFileSync(dbPath);
-        const db = new sqlite3.Database(dbBuffer);
+        const db = new SQL.Database(dbBuffer);
         const result = db.exec("SELECT COUNT(*) as count FROM candles");
         db.close();
         return result[0]?.values[0][0] || 0;
@@ -101,7 +102,7 @@ class SCPAutoUpdater {
   }
 
   // Generate updated SCP JSON
-  generateSCP() {
+  async generateSCP() {
     // Load existing SCP to preserve rich fields
     let existing = {};
     try {
@@ -113,7 +114,7 @@ class SCPAutoUpdater {
     const pm2Processes = this.getPM2Status();
     const archiveSummary = this.getArchiveSummary();
     const scpCapsuleCount = this.getSCPCapsules();
-    const candleCount = this.getCandleCount();
+    const candleCount = await this.getCandleCount();
     
     // Merge: preserve existing rich fields, update only dynamic ones
     const scpData = Object.assign({}, existing, {
@@ -161,30 +162,33 @@ class SCPAutoUpdater {
 
   // Watch for changes
   async watch() {
-    console.log(`👁️  SCP Auto-Updater started at ${new Date().toISOString()}`);
-    console.log(`   Watching for changes every ${this.updateInterval/1000} seconds`);
-    console.log(`   SCP file: ${this.scpFile}\n`);
+    console.log('\n' + '═'.repeat(50));
+    console.log(`👁️  SCP AUTO-UPDATER ACTIVE`);
+    console.log('═'.repeat(50));
+    console.log(`   Interval: ${this.updateInterval/1000} seconds`);
+    console.log(`   Target:   ${this.scpFile}`);
+    console.log('═'.repeat(50) + '\n');
     
     // Initial update
-    let currentSCP = this.generateSCP();
+    let currentSCP = await this.generateSCP();
     this.saveSCP(currentSCP);
     this.lastState = currentSCP;
-    console.log(`✅ Initial SCP saved`);
+    console.log(`   ✅ Initial SCP saved`);
     
     // Start watching
-    setInterval(() => {
+    setInterval(async () => {
       try {
-        const newSCP = this.generateSCP();
+        const newSCP = await this.generateSCP();
         if (this.hasChanged(newSCP, this.lastState)) {
           this.saveSCP(newSCP);
           this.lastState = newSCP;
-          console.log(`🔄 SCP updated at ${new Date().toISOString()}`);
-          console.log(`   → PM2: ${newSCP.platform_state.pm2_processes.length} processes`);
-          console.log(`   → Candles: ${newSCP.platform_state.candles_collected}`);
-          console.log(`   → Market: ${newSCP.platform_state.market_regime}/${newSCP.platform_state.market_sentiment}`);
+          console.log(`\n   🔄 SCP updated at ${new Date().toLocaleTimeString()}`);
+          console.log(`      → PM2:     ${newSCP.platform_state.pm2_processes.length} processes`);
+          console.log(`      → Candles: ${newSCP.platform_state.candles_collected}`);
+          console.log(`      → Market:  ${newSCP.platform_state.market_regime} / ${newSCP.platform_state.market_sentiment}`);
         }
       } catch (err) {
-        console.error(`❌ Update error: ${err.message}`);
+        console.error(`   ❌ Update error: ${err.message}`);
       }
     }, this.updateInterval);
   }

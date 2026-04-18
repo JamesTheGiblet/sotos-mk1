@@ -8,10 +8,14 @@
  *   node forge-auto.js 10        (custom iterations)
  */
 
+'use strict';
+
 const { execSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 const BASE = path.join(process.env.HOME, 'kraken-intelligence');
+const SCP_PATH = path.join(process.env.HOME, 'cce/engines/scp');
 
 function run(cmd) {
   try {
@@ -22,11 +26,11 @@ function run(cmd) {
 }
 
 function didPass(output) {
-  return output.includes('✅ PASSED');
+  return output.includes('PASSED —') || (output.includes('passed, 0 failed') && !output.includes('0 passed'));
 }
 
 function didFail(output) {
-  return output.includes('❌ FAILED');
+  return output.includes('FAILED —');
 }
 
 async function autoLoop(maxIterations = 5) {
@@ -47,42 +51,44 @@ async function autoLoop(maxIterations = 5) {
     // Validate it
     console.log('⚖️  Validating...');
     const validOut  = run('node forge-validator.js');
-    const resultLine = validOut.match(/📈.+/);
+    const resultLine = validOut.match(/(PASSED|FAILED) — .+/);
     if (resultLine) console.log(`   ${resultLine[0].trim()}`);
 
     if (didPass(validOut)) {
-      const poolLine = validOut.match(/✅ Added.+/);
-      if (poolLine) console.log(`   ${poolLine[0].trim()}`);
+      const poolLine = validOut.match(/Added .+ to strategy pool/);
+      if (poolLine) console.log(`   ✅ ${poolLine[0].trim()}`);
       console.log(`\n🎉 SUCCESS on iteration ${i}.`);
       console.log('='.repeat(60));
       return true;
     }
 
     if (didFail(validOut)) {
-      const failLine = validOut.match(/❌ FAILED.+/);
-      if (failLine) console.log(`   ${failLine[0].trim()}`);
       console.log('   📝 Failure recorded. Adjusting next hypothesis...');
     }
 
     // Delete the failed capsule so next iteration generates a fresh one
     if (idLine) {
       const id = idLine[1].trim();
-      run(`rm -rf ${path.join(process.env.HOME, 'cce/engines/scp', id)}`);
+      const targetDir = path.join(SCP_PATH, id);
+      if (fs.existsSync(targetDir)) {
+        fs.rmSync(targetDir, { recursive: true, force: true });
+      }
     } else {
-      // Fallback: delete all hypothesis capsules
-      run(`node -e "
-        const fs = require('fs');
-        const p = '${path.join(process.env.HOME, 'cce/engines/scp')}';
-        fs.readdirSync(p).forEach(d => {
-          const cf = p + '/' + d + '/capsule.json';
-          if (fs.existsSync(cf)) {
-            const c = JSON.parse(fs.readFileSync(cf, 'utf8'));
-            if (c.manifest?.status === 'failed_validation' || c.lifecycle?.status === 'failed_validation') {
-              fs.rmSync(p + '/' + d, { recursive: true });
-            }
+      // Fallback: delete all failed hypothesis capsules natively
+      if (fs.existsSync(SCP_PATH)) {
+        const dirs = fs.readdirSync(SCP_PATH);
+        for (const d of dirs) {
+          const capFile = path.join(SCP_PATH, d, 'capsule.json');
+          if (fs.existsSync(capFile)) {
+            try {
+              const c = JSON.parse(fs.readFileSync(capFile, 'utf8'));
+              if (c.manifest?.status === 'failed_validation' || c.lifecycle?.status === 'failed_validation') {
+                fs.rmSync(path.join(SCP_PATH, d), { recursive: true, force: true });
+              }
+            } catch(e) {}
           }
-        });
-      "`);
+        }
+      }
     }
   }
 

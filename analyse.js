@@ -115,13 +115,10 @@ function calculateRSI(prices, period = 14) {
 // ── ANALYSIS MODULES ──────────────────────────────────────────────────────────
 
 // 1. CORRELATION MATRIX
-function correlationMatrix(interval = '1D') {
+function correlationMatrix(interval = '1D', usdPairs = []) {
   console.log(`\n${'═'.repeat(60)}`);
   console.log(`📊 CORRELATION MATRIX — ${interval}`);
   console.log('═'.repeat(60));
-
-  const usdPairs = ['BTC/USD','ETH/USD','SOL/USD','XRP/USD',
-                    'LTC/USD','ADA/USD','LINK/USD','DOT/USD','DOGE/USD'];
 
   const pairReturns = {};
   for (const pair of usdPairs) {
@@ -157,7 +154,7 @@ function correlationMatrix(interval = '1D') {
 }
 
 // 2. LEAD/LAG ANALYSIS
-function leadLagAnalysis(interval = '1D') {
+function leadLagAnalysis(interval = '1D', alts = []) {
   console.log(`\n${'═'.repeat(60)}`);
   console.log(`⏱️  LEAD/LAG ANALYSIS — ${interval}`);
   console.log('═'.repeat(60));
@@ -165,9 +162,6 @@ function leadLagAnalysis(interval = '1D') {
 
   const btcCandles = getCandles('BTC/USD', interval);
   const btcRet     = returns(btcCandles);
-
-  const alts = ['ETH/USD','SOL/USD','XRP/USD','LTC/USD',
-                 'ADA/USD','LINK/USD','DOT/USD','DOGE/USD'];
 
   const results = [];
 
@@ -212,7 +206,7 @@ function leadLagAnalysis(interval = '1D') {
 }
 
 // 3. CASCADE ANALYSIS
-function cascadeAnalysis(interval = '1D') {
+function cascadeAnalysis(interval = '1D', alts = []) {
   console.log(`\n${'═'.repeat(60)}`);
   console.log(`🌊 CASCADE ANALYSIS — ${interval}`);
   console.log('═'.repeat(60));
@@ -230,9 +224,6 @@ function cascadeAnalysis(interval = '1D') {
     console.log('  ⚠️  Not enough drop events in dataset');
     return;
   }
-
-  const alts = ['ETH/USD','SOL/USD','XRP/USD','LTC/USD',
-                 'ADA/USD','LINK/USD','DOT/USD','DOGE/USD'];
 
   console.log('  Same day response when BTC drops 5%+:');
   console.log('  ' + '─'.repeat(50));
@@ -268,14 +259,11 @@ function cascadeAnalysis(interval = '1D') {
 }
 
 // 4. MEAN REVERSION OPPORTUNITIES
-function meanReversionAnalysis(interval = '1D') {
+function meanReversionAnalysis(interval = '1D', usdPairs = []) {
   console.log(`\n${'═'.repeat(60)}`);
   console.log(`🔄 MEAN REVERSION ANALYSIS — ${interval}`);
   console.log('═'.repeat(60));
   console.log('  Current Z-score vs 90-day mean (±2 = extreme)\n');
-
-  const usdPairs = ['BTC/USD','ETH/USD','SOL/USD','XRP/USD',
-                    'LTC/USD','ADA/USD','LINK/USD','DOT/USD','DOGE/USD'];
 
   const opportunities = [];
 
@@ -370,13 +358,12 @@ function volatilityRegime(interval = '1D') {
 }
 
 // 6. ANOMALY DETECTION
-function anomalyDetection(interval = '1D') {
+function anomalyDetection(interval = '1D', usdPairs = []) {
   console.log(`\n${'═'.repeat(60)}`);
   console.log(`🚨 ANOMALY DETECTION — ${interval}`);
   console.log('═'.repeat(60));
   console.log('  Unusual behaviour in last 7 days vs historical norms\n');
 
-  const usdPairs = ['BTC/USD','ETH/USD','SOL/USD','XRP/USD','DOGE/USD'];
   const anomalies = [];
 
   for (const pair of usdPairs) {
@@ -919,13 +906,16 @@ async function main() {
   const pairs = getAllPairs();
   console.log(`\nLoaded ${pairs.length} pairs from database`);
 
+  const usdPairs = pairs.filter(p => p.endsWith('USD') || p.endsWith('USDT'));
+  const alts     = usdPairs.filter(p => !p.startsWith('BTC'));
+
   // Run all analysis modules
-  correlationMatrix('1D');
-  leadLagAnalysis('1D');
-  cascadeAnalysis('1D');
-  meanReversionAnalysis('1D');
+  correlationMatrix('1D', usdPairs);
+  leadLagAnalysis('1D', alts);
+  cascadeAnalysis('1D', alts);
+  meanReversionAnalysis('1D', usdPairs);
   volatilityRegime('1D');
-  anomalyDetection('1D');
+  anomalyDetection('1D', usdPairs);
   patternFinder('1D');
   pharaohValidator();
   intradayPatterns();
