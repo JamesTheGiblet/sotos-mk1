@@ -1,13 +1,15 @@
-const initSqlJs = require('sql.js');
+const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
 async function setup() {
-  const SQL = await initSqlJs();
-  const db = new SQL.Database();
+  const dataDir = path.join(__dirname, 'data');
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   
-  // Create all tables
-  db.run(`CREATE TABLE market_states (
+  const db = new Database(path.join(dataDir, 'reasoning_bot.db'));
+  db.pragma('journal_mode = WAL');
+  
+  db.exec(`CREATE TABLE IF NOT EXISTS market_states (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp TEXT NOT NULL,
     regime TEXT NOT NULL,
@@ -19,7 +21,7 @@ async function setup() {
     btc_price REAL
   )`);
 
-  db.run(`CREATE TABLE strategy_selections (
+  db.exec(`CREATE TABLE IF NOT EXISTS strategy_selections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp TEXT NOT NULL,
     strategy_id TEXT NOT NULL,
@@ -32,7 +34,7 @@ async function setup() {
     market_state_id INTEGER
   )`);
 
-  db.run(`CREATE TABLE strategy_changes (
+  db.exec(`CREATE TABLE IF NOT EXISTS strategy_changes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp TEXT NOT NULL,
     from_strategy TEXT,
@@ -41,7 +43,7 @@ async function setup() {
     market_state_id INTEGER
   )`);
 
-  db.run(`CREATE TABLE alerts (
+  db.exec(`CREATE TABLE IF NOT EXISTS alerts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp TEXT NOT NULL,
     severity TEXT NOT NULL,
@@ -50,7 +52,7 @@ async function setup() {
     acknowledged INTEGER DEFAULT 0
   )`);
 
-  db.run(`CREATE TABLE daily_summaries (
+  db.exec(`CREATE TABLE IF NOT EXISTS daily_summaries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT NOT NULL,
     summary TEXT NOT NULL,
@@ -59,21 +61,11 @@ async function setup() {
     avg_sentiment TEXT
   )`);
 
-  // Save to file
-  const dataDir = path.join(__dirname, 'data');
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  
-  const dbBuffer = db.export();
-  fs.writeFileSync(path.join(dataDir, 'reasoning_bot.db'), dbBuffer);
-  
   console.log('✅ Database created with all tables');
   
-  // Verify tables exist
-  const verify = new SQL.Database(dbBuffer);
-  const tables = verify.exec("SELECT name FROM sqlite_master WHERE type='table'");
+  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
   console.log('Tables created:');
-  tables[0].values.forEach(t => console.log(`  - ${t[0]}`));
-  verify.close();
+  tables.forEach(t => console.log(`  - ${t.name}`));
   
   db.close();
 }

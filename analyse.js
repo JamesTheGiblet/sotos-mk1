@@ -4,7 +4,7 @@
 const fs        = require('fs');
 const path      = require('path');
 const https     = require('https');
-const initSqlJs = require('sql.js');
+const Database  = require('better-sqlite3');
 
 const DB_PATH = path.join(__dirname, 'data', 'intelligence.db');
 
@@ -13,24 +13,16 @@ const DB_PATH = path.join(__dirname, 'data', 'intelligence.db');
 let db;
 
 async function initDB() {
-  const SQL = await initSqlJs();
   if (!fs.existsSync(DB_PATH)) {
     console.error('❌ Database not found. Run collect.js first.');
     process.exit(1);
   }
-  db = new SQL.Database(fs.readFileSync(DB_PATH));
+  db = new Database(DB_PATH, { readonly: true });
   console.log('📂 Database loaded');
 }
 
 function query(sql, params = []) {
-  const result = db.exec(sql, params);
-  if (!result.length) return [];
-  const { columns, values } = result[0];
-  return values.map(row => {
-    const obj = {};
-    columns.forEach((col, i) => obj[col] = row[i]);
-    return obj;
-  });
+  return db.prepare(sql).all(params);
 }
 
 // ── DATA LOADER ───────────────────────────────────────────────────────────────

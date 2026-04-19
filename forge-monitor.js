@@ -34,16 +34,35 @@ const TRADING_PAIRS = {
 
 // ── Kraken API ─────────────────────────────────────────────────────────────────
 
-function httpsGet(url) {
+function httpsGet(url, retries = 3, backoff = 5000) {
   return new Promise(function(resolve, reject) {
     https.get(url, { headers: { 'User-Agent': 'Forge/1.0' } }, function(res) {
       let data = '';
       res.on('data', function(chunk) { data += chunk; });
       res.on('end', function() {
+        if (res.statusCode === 429 || res.statusCode >= 500) {
+          if (retries > 0) {
+            console.log(`   ⚠️ API Limit (${res.statusCode}). Retrying in ${Math.round(backoff/1000)}s...`);
+            return setTimeout(() => resolve(httpsGet(url, retries - 1, backoff * 1.5)), backoff);
+          }
+          return reject(new Error(`HTTP ${res.statusCode}: Max retries reached`));
+        }
         try { resolve(JSON.parse(data)); }
-        catch (e) { reject(e); }
+        catch (e) {
+          if (retries > 0) {
+            console.log(`   ⚠️ Parse Error (Cloudflare block?). Retrying in ${Math.round(backoff/1000)}s...`);
+            return setTimeout(() => resolve(httpsGet(url, retries - 1, backoff * 1.5)), backoff);
+          }
+          reject(e);
+        }
       });
-    }).on('error', reject);
+    }).on('error', function(err) {
+      if (retries > 0) {
+        console.log(`   ⚠️ Network Error. Retrying in ${Math.round(backoff/1000)}s...`);
+        return setTimeout(() => resolve(httpsGet(url, retries - 1, backoff * 1.5)), backoff);
+      }
+      reject(err);
+    });
   });
 }
 

@@ -5,6 +5,8 @@ const path = require('path');
 const fs   = require('fs');
 const HOME = process.env.HOME;
 const BASE = path.join(HOME, 'kraken-intelligence');
+const HOME = process.env.HOME || process.env.USERPROFILE || '';
+const BASE = __dirname;
 
 function readJSON(p) {
   try { if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8')); } catch(e) {}
@@ -88,6 +90,16 @@ const ACTIONS = {
         return `🟢 Online: ${on.join(', ')}${off.length ? `\n🔴 Stopped: ${off.join(', ')}` : ''}`;
       } catch(e) { return `❌ PM2 error: ${e.message}`; }
     }
+  },
+  praximous_swarm: {
+    bg: false,
+    run: () => {
+      try {
+        const out = execSync('node tools/praximous/cli.js run', { cwd: BASE, encoding: 'utf8', timeout: 10000 });
+        const lines = out.split('\n').filter(l => l.includes('✅') || l.includes('🚨') || l.includes('⚠️') || l.includes('🛑')).map(l => l.trim());
+        return `🤖 Praximous Swarm Status:\n${lines.join('\n')}`;
+      } catch(e) { return `❌ Praximous error: ${e.message}`; }
+    }
   }
 };
 
@@ -101,6 +113,7 @@ function detect(msg) {
   if (m.includes('hypothesis') || m.includes('preview') || m.includes('next strat') || m.includes('dry run')) return 'dry_run_hypothesis';
   if (m.includes('regime state') || m.includes('regime watcher') || m.includes('regime change')) return 'regime_state';
   if (m.includes('system status') || m.includes('all process') || m.includes('everything running') || m.includes('pm2')) return 'system_status';
+  if (m.includes('praximous') || m.includes('swarm') || m.includes('agents')) return 'praximous_swarm';
   return null;
 }
 

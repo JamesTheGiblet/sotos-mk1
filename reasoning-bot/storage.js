@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const initSqlJs = require('sql.js');
+const Database = require('better-sqlite3');
 
 class ReasoningBotStorage {
   constructor() {
@@ -27,7 +27,7 @@ class ReasoningBotStorage {
   saveMarketState(state) {
     if (!this.db) return null;
     try {
-      this.db.run(
+      const info = this.db.run(
         `INSERT INTO market_states (timestamp, regime, phase, sentiment, volatility, trend, volume_ratio, btc_price)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -41,10 +41,7 @@ class ReasoningBotStorage {
           state.btcPrice || 0
         ]
       );
-      const result = this.db.exec("SELECT last_insert_rowid() as id");
-      const id = result[0] ? result[0].values[0][0] : null;
-      this.saveToDisk();
-      return id;
+      return info.lastInsertRowid;
     } catch (err) {
       console.error('Error saving market state:', err.message);
       return null;
@@ -90,7 +87,6 @@ class ReasoningBotStorage {
           marketStateId || null
         ]
       );
-      this.saveToDisk();
     } catch (err) {
       console.error('Error saving strategy change:', err.message);
     }
@@ -113,17 +109,7 @@ class ReasoningBotStorage {
     limit = limit || 100;
     if (!this.db) return [];
     try {
-      const result = this.db.exec("SELECT * FROM market_states ORDER BY timestamp DESC LIMIT " + limit);
-      if (!result.length) return [];
-      const columns = result[0].columns;
-      const values = result[0].values;
-      return values.map(function(row) {
-        var obj = {};
-        for (var i = 0; i < columns.length; i++) {
-          obj[columns[i]] = row[i];
-        }
-        return obj;
-      });
+      return this.db.prepare("SELECT * FROM market_states ORDER BY timestamp DESC LIMIT ?").all(limit);
     } catch (err) {
       return [];
     }
@@ -133,17 +119,7 @@ class ReasoningBotStorage {
     limit = limit || 100;
     if (!this.db) return [];
     try {
-      const result = this.db.exec("SELECT * FROM strategy_selections ORDER BY timestamp DESC LIMIT " + limit);
-      if (!result.length) return [];
-      const columns = result[0].columns;
-      const values = result[0].values;
-      return values.map(function(row) {
-        var obj = {};
-        for (var i = 0; i < columns.length; i++) {
-          obj[columns[i]] = row[i];
-        }
-        return obj;
-      });
+      return this.db.prepare("SELECT * FROM strategy_selections ORDER BY timestamp DESC LIMIT ?").all(limit);
     } catch (err) {
       return [];
     }
@@ -153,17 +129,7 @@ class ReasoningBotStorage {
     limit = limit || 50;
     if (!this.db) return [];
     try {
-      const result = this.db.exec("SELECT * FROM strategy_changes ORDER BY timestamp DESC LIMIT " + limit);
-      if (!result.length) return [];
-      const columns = result[0].columns;
-      const values = result[0].values;
-      return values.map(function(row) {
-        var obj = {};
-        for (var i = 0; i < columns.length; i++) {
-          obj[columns[i]] = row[i];
-        }
-        return obj;
-      });
+      return this.db.prepare("SELECT * FROM strategy_changes ORDER BY timestamp DESC LIMIT ?").all(limit);
     } catch (err) {
       return [];
     }
@@ -172,17 +138,7 @@ class ReasoningBotStorage {
   getActiveAlerts() {
     if (!this.db) return [];
     try {
-      const result = this.db.exec("SELECT * FROM alerts WHERE acknowledged = 0 ORDER BY timestamp DESC");
-      if (!result.length) return [];
-      const columns = result[0].columns;
-      const values = result[0].values;
-      return values.map(function(row) {
-        var obj = {};
-        for (var i = 0; i < columns.length; i++) {
-          obj[columns[i]] = row[i];
-        }
-        return obj;
-      });
+      return this.db.prepare("SELECT * FROM alerts WHERE acknowledged = 0 ORDER BY timestamp DESC").all();
     } catch (err) {
       return [];
     }
@@ -196,17 +152,10 @@ class ReasoningBotStorage {
       var totalChanges = 0;
       var activeAlerts = 0;
       
-      var res = this.db.exec("SELECT COUNT(*) as count FROM market_states");
-      if (res.length) totalStates = res[0].values[0][0];
-      
-      res = this.db.exec("SELECT COUNT(*) as count FROM strategy_selections");
-      if (res.length) totalSelections = res[0].values[0][0];
-      
-      res = this.db.exec("SELECT COUNT(*) as count FROM strategy_changes");
-      if (res.length) totalChanges = res[0].values[0][0];
-      
-      res = this.db.exec("SELECT COUNT(*) as count FROM alerts WHERE acknowledged = 0");
-      if (res.length) activeAlerts = res[0].values[0][0];
+      totalStates = this.db.prepare("SELECT COUNT(*) as count FROM market_states").get().count;
+      totalSelections = this.db.prepare("SELECT COUNT(*) as count FROM strategy_selections").get().count;
+      totalChanges = this.db.prepare("SELECT COUNT(*) as count FROM strategy_changes").get().count;
+      activeAlerts = this.db.prepare("SELECT COUNT(*) as count FROM alerts WHERE acknowledged = 0").get().count;
       
       return { totalStates: totalStates, totalSelections: totalSelections, totalChanges: totalChanges, activeAlerts: activeAlerts };
     } catch (err) {
@@ -216,7 +165,6 @@ class ReasoningBotStorage {
 
   close() {
     if (this.db) {
-      this.saveToDisk();
       this.db.close();
     }
   }

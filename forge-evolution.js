@@ -22,7 +22,7 @@
 
 const fs        = require('fs');
 const path      = require('path');
-const initSqlJs = require('sql.js');
+const Database  = require('better-sqlite3');
 
 const DB_PATH      = path.join(process.env.HOME, 'kraken-intelligence/data/intelligence.db');
 const SELECTOR_PATH = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/strategy_selector.js');
@@ -358,20 +358,10 @@ async function loadCandles(symbol, interval, limit) {
   symbol   = symbol   || 'BTC/USD';
   interval = interval || '1D';
   limit    = limit    || 721;
-  const SQL    = await initSqlJs();
-  const db     = new SQL.Database(fs.readFileSync(DB_PATH));
-  const result = db.exec(
-    'SELECT timestamp, open, high, low, close, volume FROM candles WHERE pair = ? AND interval = ? ORDER BY timestamp ASC LIMIT ?',
-    [symbol, interval, limit]
-  );
+  const db   = new Database(DB_PATH, { readonly: true });
+  const rows = db.prepare('SELECT timestamp, open, high, low, close, volume FROM candles WHERE pair = ? AND interval = ? ORDER BY timestamp ASC LIMIT ?').all(symbol, interval, limit);
   db.close();
-  if (!result.length || !result[0].values.length) return [];
-  const { columns, values } = result[0];
-  return values.map(row => {
-    const c = {};
-    columns.forEach((col, i) => c[col] = typeof row[i] === 'bigint' ? Number(row[i]) : row[i]);
-    return c;
-  });
+  return rows;
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────

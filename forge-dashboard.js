@@ -22,7 +22,7 @@ const HOME = process.env.HOME;
 
 const app    = express();
 const server = http.createServer(app);
-const wss    = new WebSocket.Server({ server });
+const wss    = new WebSocket.Server({ server, perMessageDeflate: true });
 
 app.use(express.json());
 
@@ -91,12 +91,38 @@ async function getPrices() {
   });
 }
 
+let chatHistory = [];
+
 async function askGemini(message, context) {
   try {
     const { GoogleGenAI } = require('@google/genai');
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const r  = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: context + '\n\nUser: ' + message });
-    return r.text || 'No response';
+    
+    let prompt = context + '\n\n';
+    if (chatHistory.length > 0) {
+      prompt += '--- Conversation History ---\n';
+      chatHistory.forEach(m => prompt += `${m.role}: ${m.text}\n`);
+      prompt += '----------------------------\n\n';
+    }
+    prompt += 'User: ' + message;
+
+    const r  = await ai.models.generateContent({ 
+      model: 'gemini-2.5-flash', 
+      contents: prompt,
+      config: {
+        temperature: 0.2,
+        maxOutputTokens: 150
+      }
+    });
+    const response = r.text || 'No response';
+    
+    chatHistory.push({ role: 'User', text: message });
+    chatHistory.push({ role: 'GOLEM', text: response });
+    
+    // Keep the last 5 exchanges (10 messages total)
+    if (chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+    
+    return response;
   } catch(e) { return 'API error: ' + e.message; }
 }
 
@@ -110,6 +136,14 @@ app.post('/api/action', (req, res) => res.json({ response: null, action: null })
 app.post('/api/chat', async (req, res) => {
   const { message } = req.body;
   if (!message) return res.json({ error: 'No message' });
+  
+  let swarmStatus = 'Swarm inactive.';
+  try {
+    const out = execSync('node tools/praximous/cli.js run', { cwd: __dirname, encoding: 'utf8' });
+    const lines = out.split('\n').filter(l => l.includes('✅') || l.includes('🚨') || l.includes('⚠️') || l.includes('🛑')).map(l => l.trim());
+    swarmStatus = lines.join(' | ');
+  } catch(e) {}
+
   const s = getState();
   const c = 'You are GOLEM, the AI intelligence core of S.O.T.O.S — a sovereign trading intelligence platform.\n'
     + 'Answer clearly and concisely. Plain English, no fluff.\n\nSystem state:\n'
@@ -122,7 +156,8 @@ app.post('/api/chat', async (req, res) => {
     + '- Pharaoh: '    + ((s.pharaoh&&s.pharaoh.currentState) || 'UNKNOWN') + ' $' + ((s.pharaoh&&s.pharaoh.xrpPrice)||'?') + '\n'
     + '- F&G: '        + ((s.pharaoh&&s.pharaoh.fearGreed)    || '?')      + '/100\n'
     + '- Pool: '       + ((s.strategies&&s.strategies.length)  || 0)        + '\n'
-    + '- PM2 online: ' + ((s.pm2&&s.pm2.filter(p=>p.status==='online').length) || 0);
+    + '- PM2 online: ' + ((s.pm2&&s.pm2.filter(p=>p.status==='online').length) || 0) + '\n'
+    + '- Praximous Swarm: ' + swarmStatus;
   res.json({ response: await askGemini(message, c) });
 });
 
@@ -442,7 +477,7 @@ function drawGolem(){
 var appState={},ws;
 function openPanel(){document.getElementById('panel').classList.add('open');}
 function closePanel(){document.getElementById('panel').classList.remove('open');}
-function connectWS(){ws=new WebSocket('ws://'+location.host);ws.onmessage=function(e){appState=JSON.parse(e.data);updateAll();};ws.onclose=function(){setTimeout(connectWS,3000);};}
+function connectWS(){ws=new WebSocket('ws://'+location.host);ws.onmessage=function(e){appState=Object.assign(appState||{},JSON.parse(e.data));updateAll();};ws.onclose=function(){setTimeout(connectWS,3000);};}
 function set(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
 function updateAll(){
   if(!appState)return;

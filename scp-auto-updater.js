@@ -70,13 +70,11 @@ class SCPAutoUpdater {
     try {
       const dbPath = path.join(__dirname, 'data/intelligence.db');
       if (fs.existsSync(dbPath)) {
-        const initSqlJs = require('sql.js');
-        const SQL = await initSqlJs();
-        const dbBuffer = fs.readFileSync(dbPath);
-        const db = new SQL.Database(dbBuffer);
-        const result = db.exec("SELECT COUNT(*) as count FROM candles");
+        const Database = require('better-sqlite3');
+        const db = new Database(dbPath, { readonly: true });
+        const row = db.prepare("SELECT COUNT(*) as count FROM candles").get();
         db.close();
-        return result[0]?.values[0][0] || 0;
+        return row ? row.count : 0;
       }
     } catch (e) {
       return 723; // fallback

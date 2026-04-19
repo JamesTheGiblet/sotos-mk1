@@ -4,7 +4,7 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
-const initSqlJs = require('sql.js');
+const Database = require('better-sqlite3');
 
 const DB_PATH = path.join(__dirname, 'data', 'intelligence.db');
 const INTERVALS = ['1D', '4H', '1H'];
@@ -28,14 +28,10 @@ let db;
 let totalNewCandles = 0;
 
 async function initDB() {
-  const SQL = await initSqlJs();
-  const exists = fs.existsSync(DB_PATH);
-  if (exists) {
-    const dbBuffer = fs.readFileSync(DB_PATH);
-    db = new SQL.Database(dbBuffer);
-  } else {
-    db = new SQL.Database();
-    db.run(`CREATE TABLE candles (
+  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+  db = new Database(DB_PATH);
+  db.pragma('journal_mode = WAL');
+  db.exec(`CREATE TABLE IF NOT EXISTS candles (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       pair TEXT NOT NULL,
       interval TEXT NOT NULL,
@@ -48,32 +44,45 @@ async function initDB() {
       trades INTEGER,
       UNIQUE(pair, interval, timestamp)
     )`);
-  }
   console.log('📂 Database ready');
 }
 
-function getKrakenOHLC(pair, interval, since = null) {
+function getKrakenOHLC(pair, interval, since = null, retries = 3, backoff = 5000) {
   return new Promise((resolve, reject) => {
     const apiPair = pair.replace('/', '');
     let url = `https://api.kraken.com/0/public/OHLC?pair=${apiPair}&interval=${interval}`;
     if (since) url += `&since=${since}`;
     
-    https.get(url, (res) => {
+    https.get(url, { headers: { 'User-Agent': 'Forge/1.0' } }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
+        if (res.statusCode === 429 || res.statusCode >= 500) {
+          if (retries > 0) {
+            console.log(`  ⚠️ API Limit (${res.statusCode}). Retrying in ${Math.round(backoff/1000)}s...`);
+            return setTimeout(() => resolve(getKrakenOHLC(pair, interval, since, retries - 1, backoff * 1.5)), backoff);
+          }
+          return reject(new Error(`HTTP ${res.statusCode}: Max retries reached`));
+        }
         try {
           const json = JSON.parse(data);
-          if (json.error && json.error.length) {
-            reject(new Error(json.error.join(', ')));
-          } else {
-            resolve(json.result);
-          }
+          if (json.error && json.error.length) return reject(new Error(json.error.join(', ')));
+          resolve(json.result);
         } catch (e) {
-          reject(e);
+          if (retries > 0) {
+            console.log(`  ⚠️ Parse Error (Cloudflare block?). Retrying in ${Math.round(backoff/1000)}s...`);
+            return setTimeout(() => resolve(getKrakenOHLC(pair, interval, since, retries - 1, backoff * 1.5)), backoff);
+          }
+          reject(new Error('Invalid JSON response from Kraken'));
         }
       });
-    }).on('error', reject);
+    }).on('error', (err) => {
+      if (retries > 0) {
+        console.log(`  ⚠️ Network Error. Retrying in ${Math.round(backoff/1000)}s...`);
+        return setTimeout(() => resolve(getKrakenOHLC(pair, interval, since, retries - 1, backoff * 1.5)), backoff);
+      }
+      reject(err);
+    });
   });
 }
 
@@ -97,8 +106,8 @@ async function collectPair(pair) {
   console.log(`\n🔵 ${pair}`);
   
   for (const interval of INTERVALS) {
-    const existing = db.exec(`SELECT COUNT(*) as count FROM candles WHERE pair = ? AND interval = ?`, [pair, interval]);
-    const existingCount = existing.length ? existing[0].values[0][0] : 0;
+    const existing = db.prepare(`SELECT COUNT(*) as count FROM candles WHERE pair = ? AND interval = ?`).get(pair, interval);
+    const existingCount = existing ? existing.count : 0;
     console.log(`  📊 ${interval} — existing: ${existingCount} candles`);
     
     let since = null;
@@ -139,7 +148,7 @@ async function collectPair(pair) {
     }
     
     if (hasData) {
-      const finalCount = db.exec(`SELECT COUNT(*) as count FROM candles WHERE pair = ? AND interval = ?`, [pair, interval])[0].values[0][0];
+      const finalCount = db.prepare(`SELECT COUNT(*) as count FROM candles WHERE pair = ? AND interval = ?`).get(pair, interval).count;
       console.log(`  ✅ ${interval} — ${finalCount} total candles`);
     } else if (calls === 1) {
       console.log(`  ❌ ${interval} — No data available`);
@@ -165,22 +174,17 @@ async function main() {
   console.log(`\n🎉 Collection complete — ${totalNewCandles} new candles collected`);
   
   // Summary
-  const summary = db.exec(`SELECT pair, interval, COUNT(*) as count FROM candles GROUP BY pair, interval ORDER BY pair, interval`);
+  const summary = db.prepare(`SELECT pair, interval, COUNT(*) as count FROM candles GROUP BY pair, interval ORDER BY pair, interval`).all();
   if (summary.length) {
     console.log('\n📊 COLLECTION SUMMARY');
     console.log('═'.repeat(60));
-    const { columns, values } = summary[0];
-    for (const row of values) {
-      console.log(`  ${row[0].padEnd(12)} ${row[1].padEnd(4)} ${row[2].toString().padStart(5)} candles`);
+    for (const row of summary) {
+      console.log(`  ${row.pair.padEnd(12)} ${row.interval.padEnd(4)} ${row.count.toString().padStart(5)} candles`);
     }
   }
   
   if (totalNewCandles > 0) {
-    console.log('\n💾 Saving database to disk...');
-    const data = db.export();
-    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-    fs.writeFileSync(DB_PATH, Buffer.from(data));
-    console.log('✅ Database saved successfully');
+    console.log('\n✅ Database synced to disk (WAL mode)');
   } else {
     console.log('\n✅ Database is up to date (no new candles to save)');
   }

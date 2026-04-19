@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const initSqlJs = require('sql.js');
+const Database = require('better-sqlite3');
 
 class ReasoningBotStorage {
   constructor() {
@@ -9,9 +9,9 @@ class ReasoningBotStorage {
   }
 
   async init() {
-    const SQL = await initSqlJs();
-    const dbBuffer = fs.readFileSync(this.dbPath);
-    this.db = new SQL.Database(dbBuffer);
+    if (!fs.existsSync(this.dbPath)) fs.mkdirSync(path.dirname(this.dbPath), { recursive: true });
+    this.db = new Database(this.dbPath);
+    this.db.pragma('journal_mode = WAL');
     console.log('📁 Database connected');
     return true;
   }
@@ -23,11 +23,10 @@ class ReasoningBotStorage {
       return null;
     }
     try {
-      const stmt = this.db.prepare(
+      const info = this.db.prepare(
         `INSERT INTO market_states (timestamp, regime, phase, sentiment, volatility, trend, volume_ratio, btc_price)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-      );
-      stmt.run([
+      ).run(
         state.timestamp || new Date().toISOString(),
         state.regime || 'UNKNOWN',
         state.phase || 'UNKNOWN',
@@ -36,10 +35,8 @@ class ReasoningBotStorage {
         state.trend || 0,
         state.volumeRatio || 1,
         state.btcPrice || 0
-      ]);
-      stmt.free();
-      const result = this.db.exec("SELECT last_insert_rowid() as id");
-      const id = result[0] ? result[0].values[0][0] : null;
+      );
+      const id = info.lastInsertRowid;
       console.log('Saved market state with ID:', id);
       return id;
     } catch (err) {
@@ -53,12 +50,11 @@ class ReasoningBotStorage {
     console.log('saveStrategySelection called with:', selection.selected, marketStateId);
     if (!this.db) return;
     try {
-      const stmt = this.db.prepare(
+      this.db.prepare(
         `INSERT INTO strategy_selections 
          (timestamp, strategy_id, strategy_name, score, target_pct, stop_pct, hold_days, reasoning, market_state_id)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      );
-      stmt.run([
+      ).run(
         selection.timestamp || new Date().toISOString(),
         selection.selected || 'unknown',
         selection.name || 'Unknown',
@@ -68,8 +64,7 @@ class ReasoningBotStorage {
         (selection.params && selection.params.hold) || 0,
         selection.reasoning || '',
         marketStateId || null
-      ]);
-      stmt.free();
+      );
       console.log('Saved strategy selection');
     } catch (err) {
       console.error('Error saving strategy selection:', err.message);
@@ -82,11 +77,8 @@ class ReasoningBotStorage {
       var totalStates = 0;
       var totalSelections = 0;
       
-      var res = this.db.exec("SELECT COUNT(*) as count FROM market_states");
-      if (res.length) totalStates = res[0].values[0][0];
-      
-      res = this.db.exec("SELECT COUNT(*) as count FROM strategy_selections");
-      if (res.length) totalSelections = res[0].values[0][0];
+      totalStates = this.db.prepare("SELECT COUNT(*) as count FROM market_states").get().count;
+      totalSelections = this.db.prepare("SELECT COUNT(*) as count FROM strategy_selections").get().count;
       
       return { totalStates: totalStates, totalSelections: totalSelections, totalChanges: 0, activeAlerts: 0 };
     } catch (err) {

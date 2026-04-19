@@ -15,7 +15,7 @@ const cs = require('./chronoscribe');
 const fs           = require('fs');
 const path         = require('path');
 const { execSync } = require('child_process');
-const initSqlJs    = require('sql.js');
+const Database     = require('better-sqlite3');
 
 const DB_PATH      = path.join(process.env.HOME, 'kraken-intelligence/data/intelligence.db');
 const STATE_FILE   = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/regime_state.json');
@@ -43,20 +43,10 @@ function calcRegime(candles) {
 
 async function loadCandles(limit) {
   limit = limit || 200;
-  const SQL    = await initSqlJs();
-  const db     = new SQL.Database(fs.readFileSync(DB_PATH));
-  const result = db.exec(
-    'SELECT timestamp, open, high, low, close, volume FROM candles WHERE pair = ? AND interval = ? ORDER BY timestamp ASC LIMIT ?',
-    ['BTC/USD', '1D', limit]
-  );
+  const db   = new Database(DB_PATH, { readonly: true });
+  const rows = db.prepare('SELECT timestamp, open, high, low, close, volume FROM candles WHERE pair = ? AND interval = ? ORDER BY timestamp ASC LIMIT ?').all('BTC/USD', '1D', limit);
   db.close();
-  if (!result.length) return [];
-  const { columns, values } = result[0];
-  return values.map(row => {
-    const c = {};
-    columns.forEach((col, i) => c[col] = typeof row[i] === 'bigint' ? Number(row[i]) : row[i]);
-    return c;
-  });
+  return rows;
 }
 
 // ── State ──────────────────────────────────────────────────────────────────────
