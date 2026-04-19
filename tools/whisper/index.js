@@ -105,7 +105,7 @@ class Whisper {
       if (fs.existsSync(fullPath)) {
         this.scanDirectory(fullPath);
       } else {
-        console.log(`⚠️ Path not found: ${p}`);
+        console.log(`   ⚠️  Path not found: ${p}`);
       }
     }
     return this.results;
@@ -132,51 +132,51 @@ class Whisper {
   printReport() {
     const summary = this.getSummary();
     
-    console.log('\n' + '═'.repeat(70));
-    console.log('🔒 WHISPER SECURITY SCAN REPORT');
-    console.log('═'.repeat(70));
-    console.log(`  Critical: ${summary.critical}`);
-    console.log(`  High:     ${summary.high}`);
-    console.log(`  Medium:   ${summary.medium}`);
-    console.log(`  Low:      ${summary.low}`);
-    console.log(`  Info:     ${summary.info}`);
-    console.log(`  Total:    ${summary.total}`);
-    console.log('═'.repeat(70));
+    console.log('\n' + '═'.repeat(60));
+    console.log('🕵️  WHISPER SECURITY SCAN REPORT');
+    console.log('═'.repeat(60));
+    console.log(`   Critical: ${summary.critical}`);
+    console.log(`   High:     ${summary.high}`);
+    console.log(`   Medium:   ${summary.medium}`);
+    console.log(`   Low:      ${summary.low}`);
+    console.log(`   Info:     ${summary.info}`);
+    console.log(`   Total:    ${summary.total}`);
+    console.log('═'.repeat(60));
     
     if (summary.critical > 0) {
-      console.log('\n❌ CRITICAL ISSUES FOUND:');
+      console.log('\n   ❌ CRITICAL ISSUES FOUND:');
       for (const result of this.results) {
         for (const finding of result.findings) {
           if (finding.severity === 'CRITICAL') {
-            console.log(`  ${finding.severity}: ${result.file} (line ${finding.line})`);
-            console.log(`    → ${finding.pattern}`);
-            console.log(`    → ${finding.snippet}`);
+            console.log(`      ${finding.severity}: ${result.file} (line ${finding.line})`);
+            console.log(`        → ${finding.pattern}`);
+            console.log(`        → ${finding.snippet}`);
           }
         }
       }
-      console.log('\n⚠️  CRITICAL issues must be fixed before live deployment');
+      console.log('\n   ⚠️  CRITICAL issues must be fixed before live deployment\n');
       return false;
       
     } else if (summary.high > 0) {
-      console.log('\n🟡 HIGH SEVERITY ISSUES:');
+      console.log('\n   🟡 HIGH SEVERITY ISSUES:');
       for (const result of this.results) {
         for (const finding of result.findings) {
           if (finding.severity === 'HIGH') {
-            console.log(`  ${finding.severity}: ${result.file} (line ${finding.line})`);
-            console.log(`    → ${finding.pattern}`);
-            console.log(`    → ${finding.snippet}`);
+            console.log(`      ${finding.severity}: ${result.file} (line ${finding.line})`);
+            console.log(`        → ${finding.pattern}`);
+            console.log(`        → ${finding.snippet}`);
           }
         }
       }
-      console.log('\n⚠️  Review HIGH severity issues before live deployment');
+      console.log('\n   ⚠️  Review HIGH severity issues before live deployment\n');
       return true; // Passes but with warnings
       
     } else if (summary.medium > 0) {
-      console.log('\n📋 MEDIUM SEVERITY ISSUES — Review recommended');
+      console.log('\n   📋 MEDIUM SEVERITY ISSUES — Review recommended\n');
       return true;
       
     } else {
-      console.log('\n✅ No security issues found');
+      console.log('\n   ✅ No security issues found\n');
       return true;
     }
   }

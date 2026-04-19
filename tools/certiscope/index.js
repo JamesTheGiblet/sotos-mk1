@@ -136,7 +136,7 @@ class CertiScope {
   }
 
   async validateKrakenAPI() {
-    console.log('🔍 Validating Kraken API endpoints...');
+    console.log('   🔍 Validating Kraken API endpoints...');
     
     const endpoints = [
       { url: 'https://api.kraken.com/0/public/Time', expected: 200, name: 'Time API' },
@@ -151,30 +151,30 @@ class CertiScope {
       result.type = 'endpoint';
       result.name = endpoint.name;
       results.push(result);
-      console.log(`  ${result.name}: ${result.valid ? '✅' : '❌'} (${result.responseTime || 'N/A'}ms)`);
+      console.log(`      ${result.name.padEnd(12)} ${result.valid ? '✅' : '❌'} (${result.responseTime || 'N/A'}ms)`);
     }
     
     const sslResult = await this.checkSSL('api.kraken.com');
     sslResult.type = 'ssl';
     results.push(sslResult);
-    console.log(`  SSL Certificate: ${sslResult.valid ? '✅' : '❌'} (${sslResult.daysRemaining} days left)`);
+    console.log(`      SSL Cert     ${sslResult.valid ? '✅' : '❌'} (${sslResult.daysRemaining} days left)`);
     
     const credibility = this.calculateCredibility(results);
-    console.log(`\n📊 Kraken API Credibility: ${credibility.totalScore.toFixed(1)}% (Grade: ${credibility.grade})`);
-    console.log(`  ${credibility.recommendation}`);
+    console.log(`\n   📊 Kraken API Credibility: ${credibility.totalScore.toFixed(1)}% (Grade: ${credibility.grade})`);
+    console.log(`      ${credibility.recommendation}`);
     
     return { results, credibility };
   }
 
   validateMarketData(marketState) {
-    console.log('\n🔍 Validating market data freshness...');
+    console.log('\n   🔍 Validating market data freshness...');
     
     const freshness = this.checkFreshness(marketState, 1);
     freshness.type = 'freshness';
     
-    console.log(`  Last update: ${freshness.lastUpdate}`);
-    console.log(`  Age: ${freshness.ageHours.toFixed(1)} hours`);
-    console.log(`  Freshness score: ${freshness.score}%`);
+    console.log(`      Last update: ${freshness.lastUpdate}`);
+    console.log(`      Age:         ${freshness.ageHours.toFixed(1)} hours`);
+    console.log(`      Score:       ${freshness.score}%`);
     
     return freshness;
   }

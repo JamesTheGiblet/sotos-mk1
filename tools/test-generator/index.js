@@ -55,4 +55,22 @@ describe('${moduleName}', () => {
   }
 }
 
+if (require.main === module) {
+  console.log('\n' + '═'.repeat(60));
+  console.log('🧪 TEST GENERATOR — Automated Test Creation');
+  console.log('═'.repeat(60));
+  
+  const generator = new TestGenerator();
+  const demoModule = 'kraken_intelligence';
+  
+  console.log(`\n   ⚙️  Generating test suite for: ${demoModule}`);
+  const result = generator.generateBasicTest(demoModule);
+  
+  if (result.success) {
+    console.log(`   ✅ Test suite created: ${result.path}\n`);
+  } else {
+    console.log(`   ❌ Failed to generate test suite\n`);
+  }
+}
+
 module.exports = TestGenerator;

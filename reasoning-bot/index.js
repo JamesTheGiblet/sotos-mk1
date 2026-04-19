@@ -24,12 +24,12 @@ class ReasoningBot {
   async start() {
     await this.init();
     
-    console.log('\n' + '='.repeat(70));
+    console.log('\n' + '═'.repeat(60));
     console.log('🧠 REASONING BOT — Market-Adaptive Strategy Engine');
-    console.log('='.repeat(70));
+    console.log('═'.repeat(60));
     
     const stats = this.storage.getStats();
-    console.log(`📊 Database stats: ${stats.totalStates} states, ${stats.totalSelections} selections\n`);
+    console.log(`   📊 Database stats: ${stats.totalStates} states, ${stats.totalSelections} selections\n`);
     
     await this.run();
     setInterval(() => this.run(), this.reanalysisInterval);
@@ -65,18 +65,18 @@ class ReasoningBot {
         this.storage.saveStrategyChange(change, marketStateId);
         this.strategyHistory.push(change);
         
-        console.log('\n' + '='.repeat(70));
+        console.log('\n' + '═'.repeat(60));
         console.log('🔄 STRATEGY CHANGE DETECTED');
-        console.log('='.repeat(70));
+        console.log('═'.repeat(60));
         console.log(`   Previous: ${this.currentStrategy}`);
-        console.log(`   New: ${selection.name}`);
-        console.log(`   Score: ${selection.score}`);
+        console.log(`   New:      ${selection.name}`);
+        console.log(`   Score:    ${selection.score}`);
       } else if (!this.currentStrategy) {
-        console.log('\n' + '='.repeat(70));
+        console.log('\n' + '═'.repeat(60));
         console.log('🎯 INITIAL STRATEGY SELECTED');
-        console.log('='.repeat(70));
+        console.log('═'.repeat(60));
         console.log(`   Strategy: ${selection.name}`);
-        console.log(`   Score: ${selection.score}`);
+        console.log(`   Score:    ${selection.score}`);
       }
       
       this.currentStrategy = selection.selected;
@@ -87,17 +87,17 @@ class ReasoningBot {
       this.checkAlerts(marketState, selection);
       
       const stats = this.storage.getStats();
-      console.log(`\n📊 Total saved: ${stats.totalStates} market states, ${stats.totalSelections} selections`);
+      console.log(`\n   📊 Total saved: ${stats.totalStates} market states, ${stats.totalSelections} selections`);
       
     } catch (error) {
-      console.error('❌ Reasoning bot error:', error.message);
+      console.error('   ❌ Reasoning bot error:', error.message);
     }
   }
 
   displayStatus(marketState, selection) {
-    console.log('\n' + '─'.repeat(70));
+    console.log('\n' + '─'.repeat(60));
     console.log('📊 CURRENT MARKET STATE');
-    console.log('─'.repeat(70));
+    console.log('─'.repeat(60));
     console.log(`   Regime:     ${marketState.regime}`);
     console.log(`   Phase:      ${marketState.phase}`);
     console.log(`   Sentiment:  ${marketState.sentiment}`);
@@ -108,9 +108,9 @@ class ReasoningBot {
       console.log(`   BTC Price:  $${marketState.btcPrice.toFixed(2)}`);
     }
     
-    console.log('\n' + '─'.repeat(70));
+    console.log('\n' + '─'.repeat(60));
     console.log('🎯 RECOMMENDED STRATEGY');
-    console.log('─'.repeat(70));
+    console.log('─'.repeat(60));
     console.log(`   Name:       ${selection.name}`);
     console.log(`   Target:     ${selection.params.target}%`);
     console.log(`   Stop:       ${selection.params.stop}%`);

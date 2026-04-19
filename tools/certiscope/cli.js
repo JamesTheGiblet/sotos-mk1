@@ -10,32 +10,32 @@ async function main() {
   const certiscope = new CertiScope();
 
   if (command === 'kraken') {
-    console.log('════════════════════════════════════════════════════════');
-    console.log('🔒 CERTISCOPE - Kraken API Validation');
-    console.log('════════════════════════════════════════════════════════\n');
+    console.log('\n' + '═'.repeat(60));
+    console.log('🔒 CERTISCOPE — Kraken API Validation');
+    console.log('═'.repeat(60) + '\n');
     
     const result = await certiscope.validateKrakenAPI();
     
-    console.log('\n════════════════════════════════════════════════════════');
+    console.log('\n' + '═'.repeat(60));
     
   } else if (command === 'market') {
-    console.log('════════════════════════════════════════════════════════');
-    console.log('🔒 CERTISCOPE - Market Data Validation');
-    console.log('════════════════════════════════════════════════════════\n');
+    console.log('\n' + '═'.repeat(60));
+    console.log('🔒 CERTISCOPE — Market Data Validation');
+    console.log('═'.repeat(60) + '\n');
     
     const marketStateFile = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/active_strategy.json');
     if (fs.existsSync(marketStateFile)) {
       const marketState = JSON.parse(fs.readFileSync(marketStateFile, 'utf8'));
       const freshness = certiscope.validateMarketData(marketState);
-      console.log(`\n  Market credibility: ${freshness.score}%`);
+      console.log(`\n   ✅ Market credibility: ${freshness.score}%`);
     } else {
-      console.log('❌ Market state file not found');
+      console.log('   ❌ Market state file not found');
     }
     
   } else if (command === 'all') {
-    console.log('════════════════════════════════════════════════════════');
-    console.log('🔒 CERTISCOPE - Full System Validation');
-    console.log('════════════════════════════════════════════════════════\n');
+    console.log('\n' + '═'.repeat(60));
+    console.log('🔒 CERTISCOPE — Full System Validation');
+    console.log('═'.repeat(60) + '\n');
     
     await certiscope.validateKrakenAPI();
     
@@ -43,23 +43,21 @@ async function main() {
     if (fs.existsSync(marketStateFile)) {
       const marketState = JSON.parse(fs.readFileSync(marketStateFile, 'utf8'));
       const freshness = certiscope.validateMarketData(marketState);
-      console.log(`\n  Market credibility: ${freshness.score}%`);
+      console.log(`\n   ✅ Market credibility: ${freshness.score}%`);
     }
     
   } else {
-    console.log(`
-CertiScope — Web Credibility Scoring
-
-Commands:
-  node cli.js kraken    Validate Kraken API endpoints
-  node cli.js market    Validate market data freshness
-  node cli.js all       Run all validations
-
-Examples:
-  node cli.js kraken
-  node cli.js market
-  node cli.js all
-`);
+    console.log('\n' + '═'.repeat(60));
+    console.log('🔒 CERTISCOPE — Web Credibility Scoring');
+    console.log('═'.repeat(60));
+    console.log('   Commands:');
+    console.log('     node cli.js kraken    Validate Kraken API endpoints');
+    console.log('     node cli.js market    Validate market data freshness');
+    console.log('     node cli.js all       Run all validations');
+    console.log('\n   Examples:');
+    console.log('     node cli.js kraken');
+    console.log('     node cli.js market');
+    console.log('     node cli.js all\n');
   }
 }
 

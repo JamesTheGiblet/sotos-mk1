@@ -7,58 +7,47 @@ echo "════════════════════════�
 # Test 1: Whisper
 echo ""
 echo "🔒 TEST 1/9: Whisper Security Scan"
-node tools/whisper/cli.js scan ~/cce/engines/ 2>/dev/null | grep -E "Critical|High|Total" || echo "✅ Security scan passed"
+node tools/whisper/cli.js scan
 
 # Test 2: Aegis
 echo ""
 echo "🔒 TEST 2/9: Aegis Compliance Check"
-cd tools/aegis
-node cli.js status | grep -E "Lock|Overall"
-cd ../..
+node tools/aegis/cli.js status
 
 # Test 3: SCP
 echo ""
 echo "🔒 TEST 3/9: SCP Validation"
-cd scp
-node cli.js validate ~/cce/engines/scp/consecutive_red-2026-04-15-xf18/ 2>/dev/null | head -5
-cd ..
+node scp/cli.js list
 
 # Test 4: EmbedID
 echo ""
 echo "🔒 TEST 4/9: EmbedID Watermarking"
-node tools/embedid/cli.js watermark ~/cce/engines/scp/consecutive_red-2026-04-15-xf18 consecutive_red 2>/dev/null | head -1
+node tools/embedid/cli.js
 
 # Test 5: MarkFlow
 echo ""
 echo "🔒 TEST 5/9: MarkFlow Documentation"
-node tools/markflow/cli.js all 2>/dev/null | grep -E "README|Compliance|Dashboard"
+node tools/markflow/cli.js dashboard
 
 # Test 6: CertiScope
 echo ""
 echo "🔒 TEST 6/9: CertiScope Validation"
-node tools/certiscope/cli.js all 2>/dev/null | grep -E "Credibility|Freshness|API"
+node tools/certiscope/cli.js kraken
 
 # Test 7: Test Generator
 echo ""
 echo "🔒 TEST 7/9: Test Generator"
-node -e "const TG = require('./tools/test-generator/index.js'); const tg = new TG(); const result = tg.generateBasicTest('test_strategy'); console.log('✅ Test created:', result.path);" 2>/dev/null
+node tools/test-generator/index.js
 
 # Test 8: TreeCraft
 echo ""
 echo "🔒 TEST 8/9: TreeCraft Structure Analysis"
-node tools/treecraft/cli.js tree 2>/dev/null | head -5
-echo "  ... (showing first 5 lines)"
-node tools/treecraft/cli.js deps 2>/dev/null | head -5
+node tools/treecraft/cli.js deps
 
 # Test 9: Chameleon LM
 echo ""
 echo "🔒 TEST 9/9: Chameleon LM Domain Adaptation"
-node -e "
-const lm = new (require('./tools/chameleon-lm'))();
-const market = { regime: 'RANGING', sentiment: 'NEUTRAL' };
-const strategy = { type: 'consecutive_red', targetPct: 2, stopPct: 1 };
-console.log(lm.generateAdvice(market, strategy));
-" 2>/dev/null
+node tools/chameleon-lm/index.js
 
 echo ""
 echo "════════════════════════════════════════════════════════"

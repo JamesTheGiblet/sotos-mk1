@@ -13,10 +13,11 @@ Kraken Intelligence is a specialized trading subsystem within the **Adaptive Int
 | **Aegis** | ✅ MVP READY | Security compliance framework |
 | **EmbedID** | ✅ MVP READY | Code watermarking & provenance |
 | **MarkFlow** | ✅ MVP READY | Intelligent markdown editor |
-| Test Generator | 🚧 In Dev | Automated test creation |
-| CertiScope | 🚧 In Dev | Web credibility scoring |
-| TreeCraft | 🚧 In Dev | Project structure analysis |
-| Chameleon LM | 🚧 In Dev | Domain expertise adapter |
+| **CertiScope** | 🚧 IN DEVELOPMENT | Web credibility scoring |
+| **TreeCraft** | 🚧 IN DEVELOPMENT | Project structure analysis |
+| **Test Generator**| 🚧 IN DEVELOPMENT | Automated test creation |
+| **Chameleon LM** | 🚧 IN DEVELOPMENT | Domain expertise adapter |
+| **Praximous** | 💭 CONCEPT | AI Agents |
 
 ## Quick Links
 

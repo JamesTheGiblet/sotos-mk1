@@ -3,21 +3,36 @@
   "title": "Semantic Capsule Protocol",
   "version": "1.0.0",
   "type": "object",
-  "required": ["manifest", "strategy", "storage", "engine", "validation"],
+  "required": [
+    "protocol",
+    "manifest",
+    "semantic_context",
+    "lifecycle",
+    "signature"
+  ],
   "properties": {
+    "protocol": {
+      "type": "object",
+      "required": ["name", "version"]
+    },
     "manifest": {
       "type": "object",
-      "required": ["id", "name", "version", "type", "capabilities"]
+      "required": ["id", "name", "version", "type", "capabilities", "status"]
     },
-    "strategy": {
+    "semantic_context": {
       "type": "object",
-      "required": ["entryRules", "exitRules"]
+      "required": ["regime", "entry_rules", "exit_rules", "risk_management"]
     },
-    "validation": {
+    "lifecycle": {
       "type": "object",
+      "required": ["status", "last_updated"],
       "properties": {
-        "status": { "enum": ["pending", "validated", "failed", "under_review"] }
+        "status": { "enum": ["hypothesis", "generated", "active_dry_run", "validated", "failed_validation", "archived"] }
       }
+    },
+    "signature": {
+      "type": "object",
+      "required": ["hash", "timestamp"]
     }
   }
 }

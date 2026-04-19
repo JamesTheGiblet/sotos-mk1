@@ -8,7 +8,7 @@
 | **Security** | 3 locks, API keys in .env, 30-day dry runs |
 | **Quality** | Backtest + forward test, auto-optimization |
 | **Efficiency** | 24/7 autonomous, market-adaptive switching |
-| **Freedom** | MIT License, SCP portable strategies |
+| **Sovereignty** | MIT License, SCP portable strategies |
 
 ## One-Line Summary
 
@@ -18,10 +18,10 @@
 
 | Metric | Value |
 |--------|-------|
-| Minimum win rate | 55% |
-| Minimum trades | 8 |
+| Minimum win rate | 50% |
+| Minimum trades | 5 |
 | Dry run days | 30 |
-| Auto-optimization attempts | 10 |
+| Auto-optimization attempts | 5 |
 | Data split | 80/20 (backtest/forward) |
 
 ## The Three Locks
@@ -54,4 +54,3 @@ pm2 logs [name]
 Philosophy
 
 "I built these tools because I was tired of the same problems breaking my workflow. Then I realized I was building an entire platform."
-

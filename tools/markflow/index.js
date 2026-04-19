@@ -31,10 +31,10 @@ class MarkFlow {
     
     const capsule = JSON.parse(fs.readFileSync(capsuleFile, 'utf8'));
     const manifest = capsule.manifest;
-    const strategy = capsule.strategy;
+    const strategy = capsule.semantic_context || capsule.strategy || {};
     const watermark = capsule.watermark || {};
     
-    let readme = `# ${manifest.name}\n\n`;
+    let readme = `# 🧠 ${manifest.name}\n\n`;
     readme += `## Strategy Overview\n\n`;
     readme += `| Property | Value |\n`;
     readme += `|----------|-------|\n`;
@@ -58,10 +58,12 @@ class MarkFlow {
     readme += `\n`;
     
     readme += `## Entry Rules\n\n`;
-    readme += `\`\`\`json\n${JSON.stringify(strategy.entryRules, null, 2)}\n\`\`\`\n\n`;
+    const entryRules = strategy.entry_rules || strategy.entryRules || [];
+    readme += `\`\`\`json\n${JSON.stringify(entryRules, null, 2)}\n\`\`\`\n\n`;
     
     readme += `## Exit Rules\n\n`;
-    readme += `\`\`\`json\n${JSON.stringify(strategy.exitRules, null, 2)}\n\`\`\`\n\n`;
+    const exitRules = strategy.exit_rules || strategy.exitRules || [];
+    readme += `\`\`\`json\n${JSON.stringify(exitRules, null, 2)}\n\`\`\`\n\n`;
     
     if (watermark.fingerprint) {
       readme += `## Watermark\n\n`;
@@ -107,7 +109,7 @@ class MarkFlow {
     const strategies = fs.existsSync(strategiesFile) ? 
       JSON.parse(fs.readFileSync(strategiesFile, 'utf8')) : [];
     
-    let report = `# Aegis Compliance Report\n\n`;
+    let report = `# 🛡️ Aegis Compliance Report\n\n`;
     report += `## Three Locks Status\n\n`;
     report += `| Lock | Requirement | Status |\n`;
     report += `|------|-------------|--------|\n`;
@@ -140,7 +142,7 @@ class MarkFlow {
 
   // Generate system status dashboard
   generateStatusDashboard() {
-    let dashboard = `# Kraken Intelligence - System Dashboard\n\n`;
+    let dashboard = `# 🔮 S.O.T.O.S MK1 — System Dashboard\n\n`;
     dashboard += `## System Overview\n\n`;
     dashboard += `| Component | Status |\n`;
     dashboard += `|-----------|--------|\n`;
@@ -148,12 +150,16 @@ class MarkFlow {
     // Check each component
     const components = [
       { name: 'Data Collector', path: '~/kraken-intelligence/collect.js' },
-      { name: 'Reasoning Bot', path: '~/kraken-intelligence/reasoning-bot/index.js' },
-      { name: 'Strategy Bot', path: '~/kraken-intelligence/strategy-bot/index.js' },
-      { name: 'Validation Pipeline', path: '~/kraken-intelligence/validation-pipeline/pipeline_manager.js' },
-      { name: 'Dry Run Manager', path: '~/kraken-intelligence/dry-run-manager/dry_run_manager.js' },
-      { name: 'Adaptive Allocator', path: '~/cce/engines/adaptive-allocator/allocator.js' },
-      { name: 'SCP Protocol', path: '~/kraken-intelligence/scp/scp_generator.js' },
+      { name: 'Analysis Engine', path: '~/kraken-intelligence/analyse.js' },
+      { name: 'Forge Reasoning', path: '~/kraken-intelligence/forge-reasoning.js' },
+      { name: 'Forge Validator', path: '~/kraken-intelligence/forge-validator.js' },
+      { name: 'Forge Auto Loop', path: '~/kraken-intelligence/forge_auto.js' },
+      { name: 'Forge Monitor', path: '~/kraken-intelligence/forge-monitor.js' },
+      { name: 'Forge Dashboard', path: '~/kraken-intelligence/forge-dashboard.js' },
+      { name: 'Evolution Engine', path: '~/kraken-intelligence/forge-evolution.js' },
+      { name: 'Regime Watcher', path: '~/kraken-intelligence/regime_watcher.js' },
+      { name: 'SCP Updater', path: '~/kraken-intelligence/scp-auto-updater.js' },
+      { name: 'ChronoScribe', path: '~/kraken-intelligence/chronoscribe.js' },
       { name: 'Whisper', path: '~/kraken-intelligence/tools/whisper/index.js' },
       { name: 'Aegis', path: '~/kraken-intelligence/tools/aegis/index.js' },
       { name: 'EmbedID', path: '~/kraken-intelligence/tools/embedid/index.js' },

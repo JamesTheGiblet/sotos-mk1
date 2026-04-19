@@ -11,7 +11,7 @@ const path = require('path');
 
 class EmbedID {
   constructor() {
-    this.watermarkDir = path.join(process.env.HOME, 'kraken-intelligence', 'watermarks');
+    this.watermarkDir = path.join(__dirname, 'data');
     if (!fs.existsSync(this.watermarkDir)) {
       fs.mkdirSync(this.watermarkDir, { recursive: true });
     }

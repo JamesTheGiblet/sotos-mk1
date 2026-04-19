@@ -22,7 +22,7 @@ class SCPGenerator {
       symbol: "BTC/USD",
       exchange: "kraken",
       capital: strategy.capital || 1000,
-      status: validationResult && validationResult.passed ? "validated" : "generated",
+      status: validationResult && validationResult.passed ? "validated" : "hypothesis",
       capabilities: ["long"],
       parameters: { targetPct: strategy.target, stopPct: strategy.stop, maxHoldDays: strategy.hold },
       marketFit: { bestRegime: strategy.bestRegime || "RANGING" }
@@ -31,28 +31,28 @@ class SCPGenerator {
     return manifest;
   }
 
-  createStrategyModule(strategy) {
+  createSemanticContext(strategy) {
     return {
-      name: strategy.type.toUpperCase() + " Strategy",
-      version: "1.0.0",
-      validate: true,
-      entryRules: { type: strategy.type },
-      exitRules: { targetPct: strategy.target, stopPct: strategy.stop, maxHoldDays: strategy.hold },
-      entryTiming: "next_open",
-      params: { targetPct: strategy.target, stopPct: strategy.stop, maxHoldDays: strategy.hold }
+      regime: strategy.bestRegime || "RANGING",
+      entry_rules: [strategy.type.replace(/_/g, ' ')],
+      exit_rules: [],
+      risk_management: {
+        take_profit: "+" + strategy.target + "%",
+        stop_loss: "-" + strategy.stop + "%",
+        max_hold_days: strategy.hold
+      }
     };
   }
 
   generateSCP(strategy, validationResult) {
     const manifest = this.createManifest(strategy, validationResult);
-    const strategyModule = this.createStrategyModule(strategy);
+    const semanticContext = this.createSemanticContext(strategy);
     const capsule = {
       protocol: { name: "Semantic Capsule Protocol", version: "1.0.0" },
       manifest: manifest,
-      strategy: strategyModule,
-      storage: { engineId: manifest.id, version: "1.0.0" },
-      engine: { id: manifest.id, parameters: manifest.parameters },
-      signature: { hash: this.generateHash({ manifest: manifest, strategy: strategyModule }), timestamp: new Date().toISOString() }
+      semantic_context: semanticContext,
+      lifecycle: { status: manifest.status, last_updated: new Date().toISOString() },
+      signature: { hash: this.generateHash({ manifest: manifest, semantic_context: semanticContext }), timestamp: new Date().toISOString() }
     };
     return capsule;
   }
@@ -60,7 +60,6 @@ class SCPGenerator {
   writeSCP(capsule, outputPath) {
     if (!fs.existsSync(outputPath)) fs.mkdirSync(outputPath, { recursive: true });
     fs.writeFileSync(path.join(outputPath, "capsule.json"), JSON.stringify(capsule, null, 2));
-    console.log("SCP written to " + outputPath);
     return capsule;
   }
 }

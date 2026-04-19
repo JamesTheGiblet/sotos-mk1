@@ -48,18 +48,32 @@ class ChameleonLM {
   generateAdvice(marketState, strategy) {
     const persona = this.adaptToMarket(marketState);
     
-    let advice = `Based on ${persona.name} strategy:\n`;
-    advice += `- Risk tolerance: ${persona.riskTolerance * 100}%\n`;
-    advice += `- Max position size: ${persona.maxPositionSize * 100}%\n`;
+    let advice = `   🧠 Persona: ${persona.name}\n`;
+    advice += `      • Risk tolerance:  ${persona.riskTolerance * 100}%\n`;
+    advice += `      • Max allocation:  ${persona.maxPositionSize * 100}%\n`;
     
     if (strategy) {
-      advice += `- Recommended strategy: ${strategy.type || 'unknown'}\n`;
-      advice += `- Target: ${strategy.targetPct || 'N/A'}%\n`;
-      advice += `- Stop loss: ${strategy.stopPct || 'N/A'}%\n`;
+      advice += `      • Strategy type:   ${strategy.type || 'unknown'}\n`;
+      advice += `      • Target:          +${strategy.targetPct || 'N/A'}%\n`;
+      advice += `      • Stop loss:       -${strategy.stopPct || 'N/A'}%\n`;
     }
     
     return advice;
   }
+}
+
+if (require.main === module) {
+  console.log('\n' + '═'.repeat(60));
+  console.log('🦎 CHAMELEON LM — Domain Expertise Adapter');
+  console.log('═'.repeat(60));
+  
+  const lm = new ChameleonLM();
+  const demoState = { regime: 'TRENDING_DOWN', sentiment: 'EXTREME_FEAR' };
+  const demoStrat = { type: 'Mean Reversion', targetPct: 12, stopPct: 4 };
+  
+  console.log(`\n   📉 Market State: ${demoState.regime} | ${demoState.sentiment}\n`);
+  console.log(lm.generateAdvice(demoState, demoStrat));
+  console.log('═'.repeat(60) + '\n');
 }
 
 module.exports = ChameleonLM;

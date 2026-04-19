@@ -26,15 +26,13 @@ if (command === 'scan') {
   console.log('Whisper v1.0.0 — Kraken Intelligence Security Scanner');
   
 } else {
-  console.log(`
-Whisper — Native Security Scanner for Kraken Intelligence
-
-Usage:
-  node cli.js scan [paths...]    Scan for secrets and vulnerabilities
-  node cli.js version            Show version
-
-Examples:
-  node cli.js scan
-  node cli.js scan ~/cce/engines ~/kraken-intelligence/strategy-bot
-`);
+  console.log('\n' + '═'.repeat(60));
+  console.log('🕵️  WHISPER — Native Security Scanner');
+  console.log('═'.repeat(60));
+  console.log('   Commands:');
+  console.log('     node cli.js scan [paths...]    Scan for secrets & vulns');
+  console.log('     node cli.js version            Show version');
+  console.log('\n   Examples:');
+  console.log('     node cli.js scan');
+  console.log('     node cli.js scan ~/cce/engines\n');
 }

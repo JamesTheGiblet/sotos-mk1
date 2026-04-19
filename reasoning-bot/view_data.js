@@ -4,9 +4,9 @@ async function viewData() {
   const storage = new ReasoningBotStorage();
   await storage.init();
   
-  console.log('\n' + '='.repeat(70));
+  console.log('\n' + '═'.repeat(60));
   console.log('📊 REASONING BOT — DATABASE VIEWER');
-  console.log('='.repeat(70));
+  console.log('═'.repeat(60));
   
   const stats = storage.getStats();
   console.log(`\n📈 STATISTICS:`);

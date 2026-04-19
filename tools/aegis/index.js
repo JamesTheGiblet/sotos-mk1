@@ -15,7 +15,7 @@ const path = require('path');
 
 class Aegis {
   constructor() {
-    this.complianceDir = path.join(process.env.HOME, 'kraken-intelligence', 'compliance');
+    this.complianceDir = path.join(__dirname, '..', '..', 'compliance');
     this.auditLog = path.join(this.complianceDir, 'audit.log');
     this.locksFile = path.join(this.complianceDir, 'locks.json');
     this.strategiesFile = path.join(this.complianceDir, 'strategies.json');
@@ -43,7 +43,13 @@ class Aegis {
   log(message, type = 'INFO') {
     const timestamp = new Date().toISOString();
     const logEntry = `[${timestamp}] [${type}] ${message}`;
-    console.log(logEntry);
+    
+    // Terminal polish
+    const icons = { INFO: 'ℹ️ ', COMPLIANCE: '🛡️ ', PROGRESS: '⏳ ', WARNING: '⚠️ ' };
+    const icon = icons[type] || '📝 ';
+    console.log(`   ${icon} ${message}`);
+    
+    // Raw file log
     fs.appendFileSync(this.auditLog, logEntry + '\n');
   }
 
@@ -176,7 +182,7 @@ class Aegis {
     const lastStrategies = strategies.slice(-5);
     
     let report = '\n' + '═'.repeat(70) + '\n';
-    report += '📋 AEGIS COMPLIANCE REPORT\n';
+    report += '🛡️  AEGIS COMPLIANCE REPORT\n';
     report += '═'.repeat(70) + '\n\n';
     
     report += '🔒 THREE LOCKS STATUS:\n';
@@ -190,7 +196,7 @@ class Aegis {
       report += '📊 RECENT VALIDATIONS:\n';
       report += '───────────────────────────────────────────────────────────────\n';
       for (const s of lastStrategies) {
-        report += `  ${s.timestamp.split('T')[0]} | ${s.strategyId} | Grade: ${s.grade} | ${s.passed ? '✅ PASS' : '❌ FAIL'}\n`;
+        report += `  ${s.timestamp.split('T')[0]} | ${s.strategyId.padEnd(20)} | Grade: ${s.grade || 'N/A'} | ${s.passed ? '✅ PASS' : '❌ FAIL'}\n`;
       }
       report += '\n';
     }

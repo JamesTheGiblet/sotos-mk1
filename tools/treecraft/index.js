@@ -43,17 +43,17 @@ class TreeCraft {
   }
 
   analyzeStructure() {
-    console.log('📁 Project Structure:\n');
-    console.log(this.generateTree());
+    console.log('   📁 Project Structure:\n');
+    console.log(this.generateTree(this.rootPath, '      ', true));
     
     // Count files by type
     const stats = this.countFiles(this.rootPath);
-    console.log('\n📊 File Statistics:');
-    console.log(`  Total files: ${stats.total}`);
-    console.log(`  JavaScript: ${stats.js}`);
-    console.log(`  JSON: ${stats.json}`);
-    console.log(`  Markdown: ${stats.md}`);
-    console.log(`  Other: ${stats.other}`);
+    console.log('\n   📊 File Statistics:');
+    console.log(`      Total files: ${stats.total}`);
+    console.log(`      JavaScript:  ${stats.js}`);
+    console.log(`      JSON:        ${stats.json}`);
+    console.log(`      Markdown:    ${stats.md}`);
+    console.log(`      Other:       ${stats.other}`);
     
     return { tree: this.generateTree(), stats };
   }
@@ -97,9 +97,9 @@ class TreeCraft {
     const pkg = JSON.parse(fs.readFileSync(packageFile, 'utf8'));
     const deps = { ...pkg.dependencies, ...pkg.devDependencies };
     
-    console.log('\n📦 Dependencies:');
+    console.log('\n   📦 Dependencies:');
     for (const [name, version] of Object.entries(deps).slice(0, 10)) {
-      console.log(`  ${name}: ${version}`);
+      console.log(`      ${name.padEnd(25)} ${version}`);
     }
     
     return deps;
