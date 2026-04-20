@@ -1,4 +1,4 @@
-# S.O.T.O.S. MK1 (Kraken Intelligence)
+# Kraken Intelligence
 
 ## Adaptive Trading Platform — Giblets Creations
 
@@ -10,7 +10,7 @@
 
 **An autonomous trading system that validates itself on unseen data before ever trading live.**
 
-S.O.T.O.S. MK1 (formerly Kraken Intelligence) is a market-adaptive trading platform built to run completely locally (currently on a Samsung S24 Ultra via Termux). It collects live cryptocurrency data, analyses market conditions, generates and validates trading strategies, and monitors for entry signals across multiple assets without relying on cloud infrastructure.
+Kraken Intelligence is a market-adaptive trading platform built to run completely locally (currently on a Samsung S24 Ultra via Termux). It collects live cryptocurrency data, analyses market conditions, generates and validates trading strategies, and monitors for entry signals without relying on cloud infrastructure.
 
 ## 🏛️ The Five Pillars
 
@@ -31,16 +31,14 @@ S.O.T.O.S. MK1 (formerly Kraken Intelligence) is a market-adaptive trading platf
 - `forge-monitor` — Watches for entry conditions every 5 minutes.
 - `reasoning-bot` — Selects the best strategy for current market conditions hourly.
 - `ki-collector` — Collects daily OHLCV data from Kraken at 6am UTC.
-- `forge-dashboard` — GOLEM v3 live WebSockets corporate dashboard.
-- `praximous-swarm` — Multi-agent swarm (Scout, Forge Master, Sentinel, Librarian, Diplomat).
 
-**Strategy Pool & Assets:**
+**Strategy Pool (8 strategies):**
 
-Strategies now evaluate and trade independently across 8 assets: **BTC, ETH, SOL, XRP, LINK, LTC, DOGE, and the ETH/BTC ratio**.
-
-Includes evolutionary AI generation (`forge-evolution.js`) capable of breeding asset-specific quant agents
-(e.g., Meme Coin specialists for DOGE, Z-Score Mean Reverters for ETH/BTC), and hypothesis synthesis
-(`forge-reasoning.js`) for dynamic market regime targeting.
+- **5 Original Hardcoded Strategies:** Smart BTC, Momentum, Grid, Breakout, Mean Reversion.
+- **3 Forge-Validated Strategies:**
+  - *H.E Consecutive Red + RSI* — 62.5% WR, +41.5% return
+  - *H.E Mean Reversion Bollinger* — 56.3% WR, +45.2% return
+  - *H.E Oversold Bounce* — 56.3% WR, +41.9% return
 
 **Current Market Conditions (as of 2026-04-15):**
 
@@ -106,7 +104,6 @@ Failed strategies are stored in `reasoning-bot/data/validation_failures.json` an
 │       ├── validation_failures.json
 │       └── monitor_log.json
 ├── tools/                 — 9 Integrated tools
-│   ├── praximous/         — AI Agent Swarm (Telegram alerts, DB maintenance, auto-mutation)
 ├── data/
 │   └── intelligence.db    — 721+ daily candles, 10+ pairs
 └── cce/engines/scp/       — Validated strategy capsules
@@ -117,8 +114,9 @@ Failed strategies are stored in `reasoning-bot/data/validation_failures.json` an
 ## Known Limitations
 
 - Backtest results come from the same 721 historical candles — forward performance may differ
+- The monitor has not yet caught a live entry signal (market conditions currently ranging/neutral)
 - The 30-day dry run gate in Aegis is a counter, not 30 actual days of trading
-- Live API execution is currently locked behind dry-run verification mode
+- Strategy pool previously accumulated duplicates — resolved 2026-04-15
 
 ---
 
@@ -141,13 +139,7 @@ node forge-monitor.js --once
 cd reasoning-bot && node -e "const b = new (require('./index'))(); b.runOnce();"
 
 # Platform Status
-bash tools/aegis/status.sh
-
-# Run the Praximous Swarm (Diplomat, Librarian, Sentinel, Forge Master, Scout)
-node tools/praximous/cli.js run
-
-# Start the GOLEM Dashboard
-node forge-dashboard.js
+./platform-status.sh
 ```
 
 ---
