@@ -17,10 +17,10 @@ const path         = require('path');
 const { execSync } = require('child_process');
 const Database     = require('better-sqlite3');
 
-const DB_PATH      = path.join(process.env.HOME, 'kraken-intelligence/data/intelligence.db');
-const STATE_FILE   = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/regime_state.json');
-const ARCHIVE_FILE = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/strategy_archive.json');
-const BASE         = path.join(process.env.HOME, 'kraken-intelligence');
+const DB_PATH      = path.join(__dirname, 'data/intelligence.db');
+const STATE_FILE   = path.join(__dirname, 'reasoning-bot/data/regime_state.json');
+const ARCHIVE_FILE = path.join(__dirname, 'reasoning-bot/data/strategy_archive.json');
+const BASE         = __dirname;
 
 const REGIME_THRESHOLD = 3;
 

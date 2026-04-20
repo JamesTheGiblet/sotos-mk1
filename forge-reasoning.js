@@ -19,10 +19,12 @@ const crypto = require('crypto');
 
 const MarketAnalyser = require('./reasoning-bot/market_analyser');
 
-const SCP_PATH      = path.join(process.env.HOME, 'cce/engines/scp');
-const FAILURE_LOG   = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/validation_failures.json');
-const SELECTOR_PATH = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/strategy_selector.js');
-const USED_FILE     = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/used_templates.json');
+const HOME = process.env.HOME || process.env.USERPROFILE || '';
+const SCP_PATH      = path.join(HOME, 'cce/engines/scp');
+const FAILURE_LOG   = path.join(__dirname, 'reasoning-bot', 'data', 'validation_failures.json');
+const SELECTOR_PATH = path.join(__dirname, 'reasoning-bot', 'strategy_selector.js');
+const USED_FILE     = path.join(__dirname, 'reasoning-bot', 'data', 'used_templates.json');
+const INJECTION_FILE= path.join(__dirname, 'reasoning-bot', 'data', 'praximous_injection.json');
 
 // ── Templates ──────────────────────────────────────────────────────────────────
 
@@ -293,7 +295,7 @@ function tuneParameters(market, failures, history) {
 
 // ── Build capsule ──────────────────────────────────────────────────────────────
 
-function buildCapsule(hypothesis, market, failures) {
+function buildCapsule(hypothesis, market, failures, targetPair) {
   const id        = 'hyp_' + hypothesis.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + Date.now().toString(36);
   const hash      = crypto.createHash('sha256').update(id).digest('hex').slice(0, 16);
   const timestamp = new Date().toISOString();
@@ -306,7 +308,7 @@ function buildCapsule(hypothesis, market, failures) {
     manifest: {
       id: id, name: hypothesis.name, version: '1.0.0',
       created: timestamp, type: 'generated_hypothesis',
-      symbol: 'BTC/USD', exchange: 'kraken', capital: 1000,
+      symbol: targetPair, exchange: 'kraken', capital: 1000,
       status: 'hypothesis',
       parameters: { targetPct: hypothesis.risk.target, stopPct: hypothesis.risk.stop, maxHoldDays: hypothesis.risk.hold },
       marketFit: {
@@ -372,18 +374,23 @@ async function reason(dryRun) {
     console.log('   No failures recorded.');
   }
 
+  const AVAILABLE_PAIRS = ['BTC/USD', 'ETH/USD', 'SOL/USD', 'XRP/USD', 'LINK/USD', 'DOGE/USD', 'LTC/USD', 'ETH/BTC'];
+  const targetPair = AVAILABLE_PAIRS[Math.floor(Math.random() * AVAILABLE_PAIRS.length)];
+
   console.log('\n⚡ Synthesising hypothesis...');
   const templateKey = selectTemplate(market, failures);
   const params      = tuneParameters(market, failures, history);
   const hypothesis  = TEMPLATES[templateKey](params);
+  if (targetPair !== 'BTC/USD') hypothesis.name += ' (' + targetPair.split('/')[0] + ')';
 
   console.log('   Template:    ' + templateKey);
   console.log('   Name:        ' + hypothesis.name);
+  console.log('   Target Pair: ' + targetPair);
   console.log('   Entry rules: ' + hypothesis.entry_rules.join(' AND '));
   console.log('   Exit rules:  ' + hypothesis.exit_rules.join(' OR '));
   console.log('   Stop: -' + params.stop + '%  Target: +' + params.target + '%  Hold: ' + params.hold + 'd');
 
-  const capsule = buildCapsule(hypothesis, market, failures);
+  const capsule = buildCapsule(hypothesis, market, failures, targetPair);
 
   if (dryRun) {
     console.log('\n📋 DRY RUN — not saving');

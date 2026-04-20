@@ -29,7 +29,8 @@ const TRADING_PAIRS = {
   'XRP/USD':  { kraken: 'XRPUSD',  tickers: ['XRPUSD', 'XXRPZUSD'] },
   'LINK/USD': { kraken: 'LINKUSD', tickers: ['LINKUSD'] },
   'LTC/USD':  { kraken: 'LTCUSD',  tickers: ['LTCUSD', 'XLTCZUSD'] },
-  'DOGE/USD': { kraken: 'DOGEUSD', tickers: ['DOGEUSD'] }
+  'DOGE/USD': { kraken: 'DOGEUSD', tickers: ['DOGEUSD'] },
+  'ETH/BTC':  { kraken: 'ETHXBT',  tickers: ['ETHXBT', 'XETHXXBT'] }
 };
 
 // ── Kraken API ─────────────────────────────────────────────────────────────────
@@ -267,14 +268,14 @@ async function check() {
   const krakenPairs = Object.values(TRADING_PAIRS).map(p => p.kraken);
   let prices, btcCandles;
 
-  try {
-    const isGrid   = active.strategy && active.strategy.includes('grid');
-    const interval = isGrid ? 60 : 1440;
-    const limit    = isGrid ? 100 : 60;
+  const isGrid   = active.strategy && active.strategy.includes('grid');
+  const fetchInterval = isGrid ? 60 : 1440;
+  const fetchLimit    = isGrid ? 100 : 60;
 
+  try {
     [prices, btcCandles] = await Promise.all([
       fetchLivePrices(krakenPairs),
-      fetchOHLC('XBTUSD', interval, limit)
+      fetchOHLC('XBTUSD', fetchInterval, fetchLimit)
     ]);
   } catch (e) {
     console.log('   Data fetch failed: ' + e.message);
@@ -299,44 +300,24 @@ async function check() {
     return;
   }
 
-  console.log('   Entry conditions:');
-  const btcPrice   = prices['XBTUSD'] ? prices['XBTUSD'].price : (prices['XXBTZUSD'] ? prices['XXBTZUSD'].price : 0);
+  console.log('   Global Entry Rules:');
   rules.entryRules.forEach(function(r) {
-    const met = evaluateRule(r, btcCandles, btcPrice);
-    console.log('     ' + (met ? 'MET' : 'not yet') + ' — ' + r);
+    console.log('     — ' + r);
   });
 
-  // Check each pair for signals
-  const allMet = rules.entryRules.every(function(r) { return evaluateRule(r, btcCandles, btcPrice); });
-  if (allMet) {
-    // Entry triggered — check all pairs
-    for (const pair of Object.keys(TRADING_PAIRS)) {
-      const info   = TRADING_PAIRS[pair];
-      const ticker = info.tickers.reduce((found, key) => found || prices[key], null);
-      if (!ticker) continue;
+  // Check all pairs independently
+  for (const pair of Object.keys(TRADING_PAIRS)) {
+    const info   = TRADING_PAIRS[pair];
+    const ticker = info.tickers.reduce((found, key) => found || prices[key], null);
+    if (!ticker) continue;
 
-      // Fetch candles for this pair if not BTC
-      let pairCandles = btcCandles;
-      if (pair !== 'BTC/USD') {
-        try { pairCandles = await fetchOHLC(info.kraken, 1440, 60); } catch (e) { continue; }
-      }
-
-      checkPair(pair, ticker.price, pairCandles, rules, log, ts);
+    // Fetch candles for this pair if not BTC
+    let pairCandles = btcCandles;
+    if (pair !== 'BTC/USD') {
+      try { pairCandles = await fetchOHLC(info.kraken, fetchInterval, fetchLimit); } catch (e) { continue; }
     }
-  } else {
-    // Check open positions across all pairs
-    for (const pair of Object.keys(log.positions)) {
-      const info   = TRADING_PAIRS[pair];
-      if (!info) continue;
-      const ticker = info.tickers.reduce((found, key) => found || prices[key], null);
-      if (!ticker) continue;
 
-      let pairCandles = btcCandles;
-      if (pair !== 'BTC/USD') {
-        try { pairCandles = await fetchOHLC(info.kraken, 1440, 60); } catch (e) { continue; }
-      }
-      checkPair(pair, ticker.price, pairCandles, rules, log, ts);
-    }
+    checkPair(pair, ticker.price, pairCandles, rules, log, ts);
   }
 
   // Print running stats

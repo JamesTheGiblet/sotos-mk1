@@ -24,10 +24,10 @@ const fs        = require('fs');
 const path      = require('path');
 const Database  = require('better-sqlite3');
 
-const DB_PATH      = path.join(process.env.HOME, 'kraken-intelligence/data/intelligence.db');
-const SELECTOR_PATH = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/strategy_selector.js');
-const ARCHIVE_FILE  = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/strategy_archive.json');
-const EVOLUTION_LOG = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/evolution_log.json');
+const DB_PATH       = path.join(__dirname, 'data', 'intelligence.db');
+const SELECTOR_PATH = path.join(__dirname, 'reasoning-bot', 'strategy_selector.js');
+const ARCHIVE_FILE  = path.join(__dirname, 'reasoning-bot', 'data', 'strategy_archive.json');
+const EVOLUTION_LOG = path.join(__dirname, 'reasoning-bot', 'data', 'evolution_log.json');
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 
@@ -102,6 +102,46 @@ const AGENT_TYPES = {
       const rsi    = calcRSI(closes, 14);
       return rsi > 65;
     }
+  },
+
+  doge_specialist: {
+    name: 'DOGE Specialist',
+    description: 'Deep dip buyer and volume spike chaser tailored for meme coin volatility',
+    defaults: { dropThreshold: 15, volumeMultiplier: 3.0, rsiMin: 30, stop: 10, target: 20, hold: 14 },
+    ranges:   { dropThreshold: [10, 25], volumeMultiplier: [2.0, 5.0], rsiMin: [20, 40], stop: [5, 15], target: [15, 35], hold: [7, 21] },
+    entry: (params, candles, idx) => {
+      if (idx < 5) return false;
+      const drop5d  = (candles[idx].close - candles[idx-5].close) / candles[idx-5].close * 100;
+      const closes  = candles.slice(0, idx + 1).map(c => c.close);
+      const rsi     = calcRSI(closes, 14);
+      const avgVol  = calcVolumeAvg(candles, idx, 20);
+      
+      // Buy massive 5-day dips OR massive volume spikes off bottoms
+      return (drop5d < -params.dropThreshold) || (candles[idx].volume > avgVol * params.volumeMultiplier && rsi < params.rsiMin);
+    },
+    exit: (params, candles, idx) => {
+      const closes = candles.slice(0, idx + 1).map(c => c.close);
+      const rsi    = calcRSI(closes, 14);
+      return rsi > 75; // Exit on extreme overbought sentiment
+    }
+  },
+
+  eth_btc_specialist: {
+    name: 'ETH/BTC Specialist',
+    description: 'Pair trading agent utilizing Z-score mean reversion on the ratio',
+    defaults: { zEntry: 2.0, window: 90, stop: 3, target: 5, hold: 30 },
+    ranges:   { zEntry: [1.5, 3.0], window: [45, 120], stop: [2, 6], target: [3, 10], hold: [14, 40] },
+    entry: (params, candles, idx) => {
+      if (idx < params.window) return false;
+      const closes = candles.slice(0, idx + 1).map(c => c.close);
+      const z = calcZScore(closes, Math.round(params.window));
+      return z < -params.zEntry; // Buy when ratio is unusually low (ETH cheap vs BTC)
+    },
+    exit: (params, candles, idx) => {
+      const closes = candles.slice(0, idx + 1).map(c => c.close);
+      const z = calcZScore(closes, Math.round(params.window));
+      return z > -0.5; // Exit when ratio reverts back toward the mean
+    }
   }
 
 };
@@ -146,6 +186,15 @@ function calcVolumeAvg(candles, idx, period) {
   const vols = candles.slice(Math.max(0, idx - period), idx).map(c => c.volume);
   if (!vols.length) return 0;
   return vols.reduce((a, b) => a + b, 0) / vols.length;
+}
+
+function calcZScore(closes, period) {
+  if (closes.length < period) return 0;
+  const w = closes.slice(-period);
+  const mean = w.reduce((a, b) => a + b, 0) / period;
+  const std = Math.sqrt(w.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / period);
+  if (std === 0) return 0;
+  return (closes[closes.length - 1] - mean) / std;
 }
 
 // ── Simulation ─────────────────────────────────────────────────────────────────
@@ -270,14 +319,15 @@ function reproduce(population, eliminationRate) {
 
 // ── Strategy pool ──────────────────────────────────────────────────────────────
 
-function addChampionToPool(champion, trainMetrics, forwardMetrics) {
+function addChampionToPool(champion, trainMetrics, forwardMetrics, targetPair) {
   if (!fs.existsSync(SELECTOR_PATH)) return;
 
   const agent   = AGENT_TYPES[champion.agentType];
   const cleanId = 'evo_' + champion.agentType + '_' + champion.id;
+  const suffix  = targetPair && targetPair !== 'BTC/USD' ? ' - ' + targetPair.split('/')[0] : '';
 
   const newStrategy = {
-    name:             'EVO ' + agent.name + ' (' + champion.id + ')',
+    name:             'EVO ' + agent.name + suffix + ' (' + champion.id + ')',
     entry:            agent.description,
     target:           champion.params.target   || 12,
     stop:             champion.params.stop      || 5,
@@ -366,15 +416,17 @@ async function loadCandles(symbol, interval, limit) {
 
 // ── Main ───────────────────────────────────────────────────────────────────────
 
-async function evolve(generations, populationSize) {
+async function evolve(generations, populationSize, targetPair) {
   generations    = generations    || GENERATIONS;
   populationSize = populationSize || POPULATION_SIZE;
+  targetPair     = targetPair     || 'BTC/USD';
 
   console.log('\n' + '═'.repeat(50));
   console.log('🧬 FORGE EVOLUTION ENGINE');
   console.log('═'.repeat(50));
   console.log('   Generations:  ' + generations);
   console.log('   Population:   ' + populationSize);
+  console.log('   Target Asset: ' + targetPair);
   console.log('   Agent types:  ' + Object.keys(AGENT_TYPES).join(', '));
   console.log('   Elimination:  ' + (ELIMINATION_RATE * 100) + '% per generation');
   console.log('   Mutation:     ' + (MUTATION_RATE * 100) + '% rate, ' + (MUTATION_STRENGTH * 100) + '% strength');
@@ -382,7 +434,7 @@ async function evolve(generations, populationSize) {
 
   // Load data
   console.log('\n   Loading candle data...');
-  const candles = await loadCandles('BTC/USD', '1D', 721);
+  const candles = await loadCandles(targetPair, '1D', 721);
   if (!candles.length) { console.log('   No candle data'); return; }
 
   const splitIdx    = Math.floor(candles.length * TRAIN_SPLIT);
@@ -446,7 +498,8 @@ async function evolve(generations, populationSize) {
 
   // Champion — forward validate the best
   const champion = population[0];
-  console.log('\n👑 CHAMPION: ' + AGENT_TYPES[champion.agentType].name);
+  const suffix  = targetPair && targetPair !== 'BTC/USD' ? ' - ' + targetPair.split('/')[0] : '';
+  console.log('\n👑 CHAMPION: ' + AGENT_TYPES[champion.agentType].name + suffix);
   console.log('   Params: ' + JSON.stringify(champion.params));
 
   console.log('\n   Running forward validation...');
@@ -460,7 +513,7 @@ async function evolve(generations, populationSize) {
 
   if (passed) {
     console.log('\n   ✅ CHAMPION PASSED — adding to strategy pool');
-    addChampionToPool(champion, champion.trainMetrics, forwardMetrics);
+    addChampionToPool(champion, champion.trainMetrics, forwardMetrics, targetPair);
   } else {
     console.log('\n   ❌ Champion failed forward validation — archiving');
     archiveLoser(champion, 'Failed forward validation — forward score: ' + forwardScore);
@@ -483,7 +536,9 @@ async function evolve(generations, populationSize) {
 const args       = process.argv.slice(2);
 const genFlag    = args.indexOf('--generations');
 const popFlag    = args.indexOf('--population');
+const pairFlag   = args.indexOf('--pair');
 const generations = genFlag !== -1 ? parseInt(args[genFlag + 1]) : GENERATIONS;
 const popSize     = popFlag !== -1 ? parseInt(args[popFlag + 1]) : POPULATION_SIZE;
+const targetPair  = pairFlag !== -1 ? args[pairFlag + 1] : 'BTC/USD';
 
-evolve(generations, popSize).catch(console.error);
+evolve(generations, popSize, targetPair).catch(console.error);

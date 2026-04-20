@@ -22,9 +22,10 @@ const Database  = require('better-sqlite3');
 const fs        = require('fs');
 const path      = require('path');
 
-const DB_PATH     = path.join(process.env.HOME, 'kraken-intelligence/data/intelligence.db');
-const SCP_PATH    = path.join(process.env.HOME, 'cce/engines/scp');
-const FAILURE_LOG = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/validation_failures.json');
+const HOME        = process.env.HOME || process.env.USERPROFILE || '';
+const DB_PATH     = path.join(__dirname, 'data/intelligence.db');
+const SCP_PATH    = path.join(HOME, 'cce/engines/scp');
+const FAILURE_LOG = path.join(__dirname, 'reasoning-bot/data/validation_failures.json');
 
 const MIN_WIN_RATE   = 50.0;
 const MIN_RETURN     = 0.0;
@@ -247,7 +248,7 @@ function saveFailure(id, name, metrics, reason, entryRules, exitRules) {
 // ── Strategy pool ──────────────────────────────────────────────────────────────
 
 function addToStrategyPool(capsule, backtest, forward) {
-  const selectorPath = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/strategy_selector.js');
+  const selectorPath = path.join(__dirname, 'reasoning-bot/strategy_selector.js');
   if (!fs.existsSync(selectorPath)) return;
   const manifest = capsule.manifest || {};
   const ctx      = capsule.semantic_context || {};
@@ -316,14 +317,15 @@ async function validate(specificCapsulePath) {
   console.log('   Split:  80% backtest / 20% forward — both must pass');
   console.log('═'.repeat(50));
 
-  console.log('\n   Loading candle data...');
-  const candles = await loadCandles('BTC/USD', '1D', 721);
-  if (!candles.length) { console.log('   No candle data'); return; }
-
-  const splitIdx   = Math.floor(candles.length * TRAIN_SPLIT);
-  const trainData  = candles.slice(0, splitIdx);
-  const forwardData = candles.slice(splitIdx);
-  console.log('   Loaded ' + candles.length + ' candles (' + trainData.length + ' train / ' + forwardData.length + ' forward)\n');
+  const candleCache = {};
+  async function getCachedCandles(symbol) {
+    if (!candleCache[symbol]) {
+      console.log('   Loading candle data for ' + symbol + '...');
+      candleCache[symbol] = await loadCandles(symbol, '1D', 721);
+    }
+    return candleCache[symbol];
+  }
+  console.log();
 
   let toTest = [];
   if (specificCapsulePath) {
@@ -341,6 +343,14 @@ async function validate(specificCapsulePath) {
   for (const item of toTest) {
     const capsule = item.data;
     const name    = (capsule.manifest && capsule.manifest.name) || (capsule.asset && capsule.asset.name) || item.id;
+    const symbol  = (capsule.manifest && capsule.manifest.symbol) || 'BTC/USD';
+    
+    const candles = await getCachedCandles(symbol);
+    if (!candles.length) { console.log('   ⚠️  No candle data for ' + symbol); continue; }
+    const splitIdx   = Math.floor(candles.length * TRAIN_SPLIT);
+    const trainData  = candles.slice(0, splitIdx);
+    const forwardData = candles.slice(splitIdx);
+
     console.log('   🧪 Testing: ' + name);
 
     const backtest = simulate(capsule, trainData);

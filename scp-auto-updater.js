@@ -58,7 +58,8 @@ class SCPAutoUpdater {
 
   // Get SCP capsule count
   getSCPCapsules() {
-    const scpDir = path.join(process.env.HOME, 'cce/engines/scp');
+    const HOME = process.env.HOME || process.env.USERPROFILE || '';
+    const scpDir = path.join(HOME, 'cce/engines/scp');
     if (fs.existsSync(scpDir)) {
       return fs.readdirSync(scpDir).filter(f => f.startsWith('hyp_') || f.startsWith('consecutive')).length;
     }
@@ -118,6 +119,7 @@ class SCPAutoUpdater {
     const scpData = Object.assign({}, existing, {
       protocol: existing.protocol || { name: "Semantic Capsule Protocol", version: "1.0.0" },
       manifest: Object.assign({}, existing.manifest || {}, {
+        system: "S.O.T.O.S. MK1",
         last_updated: new Date().toISOString(),
         status: "active_dry_run"
       }),
@@ -125,6 +127,7 @@ class SCPAutoUpdater {
         pm2_processes: pm2Processes.map(p => ({ name: p.name, status: p.status })),
         candles_collected: candleCount,
         scp_capsules: scpCapsuleCount,
+        supported_assets: ['BTC/USD', 'ETH/USD', 'SOL/USD', 'XRP/USD', 'LINK/USD', 'LTC/USD', 'DOGE/USD', 'ETH/BTC'],
         active_strategy: marketState?.strategy || (existing.platform_state && existing.platform_state.active_strategy) || "unknown",
         market_regime: marketState?.marketState?.regime || "RANGING",
         market_sentiment: marketState?.marketState?.sentiment || "NEUTRAL",
@@ -184,6 +187,7 @@ class SCPAutoUpdater {
           console.log(`      → PM2:     ${newSCP.platform_state.pm2_processes.length} processes`);
           console.log(`      → Candles: ${newSCP.platform_state.candles_collected}`);
           console.log(`      → Market:  ${newSCP.platform_state.market_regime} / ${newSCP.platform_state.market_sentiment}`);
+          console.log(`      → Assets:  ${newSCP.platform_state.supported_assets.length} tracked pairs`);
         }
       } catch (err) {
         console.error(`   ❌ Update error: ${err.message}`);

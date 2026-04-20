@@ -19,6 +19,7 @@ const defaultPairs = [
   'LINK/USD',
   'DOGE/USD',
   'LTC/USD',
+  'ETH/BTC',
 ];
 
 // Allow passing custom pairs via CLI: node collect.js XAUT/USD

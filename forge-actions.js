@@ -3,8 +3,6 @@
 const { execSync, spawn } = require('child_process');
 const path = require('path');
 const fs   = require('fs');
-const HOME = process.env.HOME;
-const BASE = path.join(HOME, 'kraken-intelligence');
 const HOME = process.env.HOME || process.env.USERPROFILE || '';
 const BASE = __dirname;
 
@@ -95,7 +93,7 @@ const ACTIONS = {
     bg: false,
     run: () => {
       try {
-        const out = execSync('node tools/praximous/cli.js run', { cwd: BASE, encoding: 'utf8', timeout: 10000 });
+        const out = execSync('node tools/praximous/cli.js run', { cwd: BASE, encoding: 'utf8', timeout: 30000 });
         const lines = out.split('\n').filter(l => l.includes('✅') || l.includes('🚨') || l.includes('⚠️') || l.includes('🛑')).map(l => l.trim());
         return `🤖 Praximous Swarm Status:\n${lines.join('\n')}`;
       } catch(e) { return `❌ Praximous error: ${e.message}`; }

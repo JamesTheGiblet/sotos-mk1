@@ -14,8 +14,9 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const BASE = path.join(process.env.HOME, 'kraken-intelligence');
-const SCP_PATH = path.join(process.env.HOME, 'cce/engines/scp');
+const HOME     = process.env.HOME || process.env.USERPROFILE || '';
+const BASE     = __dirname;
+const SCP_PATH = path.join(HOME, 'cce/engines/scp');
 
 function run(cmd) {
   try {

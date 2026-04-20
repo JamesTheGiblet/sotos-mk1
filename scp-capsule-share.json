@@ -1,0 +1,67 @@
+{
+  "protocol": {
+    "name": "Semantic Capsule Protocol",
+    "version": "1.0.0"
+  },
+  "manifest": {
+    "system": "S.O.T.O.S. MK1",
+    "last_updated": "2026-04-20T05:21:09.488Z",
+    "status": "active_dry_run"
+  },
+  "platform_state": {
+    "pm2_processes": [
+      {
+        "name": "forge-monitor",
+        "status": "online"
+      },
+      {
+        "name": "forge-dashboard",
+        "status": "online"
+      },
+      {
+        "name": "scp-updater",
+        "status": "online"
+      },
+      {
+        "name": "ki-collector",
+        "status": "stopped"
+      },
+      {
+        "name": "regime-watcher",
+        "status": "stopped"
+      },
+      {
+        "name": "praximous-swarm",
+        "status": "stopped"
+      }
+    ],
+    "candles_collected": 15141,
+    "scp_capsules": 0,
+    "supported_assets": [
+      "BTC/USD",
+      "ETH/USD",
+      "SOL/USD",
+      "XRP/USD",
+      "LINK/USD",
+      "LTC/USD",
+      "DOGE/USD",
+      "ETH/BTC"
+    ],
+    "active_strategy": "hyp_h_e_consecutive_red___rsi_mnzy4jj8",
+    "market_regime": "RANGING",
+    "market_sentiment": "NEUTRAL",
+    "market_phase": "ACCUMULATION",
+    "btc_price": 71422.7,
+    "monitor": {
+      "checks": 149,
+      "trades": 0,
+      "open_positions": 0,
+      "last_trade": null
+    }
+  },
+  "lifecycle": {
+    "status": "active_dry_run",
+    "last_updated": "2026-04-20T05:21:09.489Z",
+    "version_notes": "Auto-updated by SCP watcher"
+  }
+}

@@ -9,7 +9,7 @@
     "once": "node cli.js once"
   },
   "dependencies": {
-    "sql.js": "^1.14.1"
+    "better-sqlite3": "^11.0.0"
   },
   "keywords": [],
   "author": "",

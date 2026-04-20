@@ -1,8 +1,8 @@
-const initSqlJs = require('sql.js');
+const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(process.env.HOME, 'kraken-intelligence/data/intelligence.db');
+const DB_PATH = path.join(__dirname, '..', 'data', 'intelligence.db');
 
 class MarketAnalyser {
   constructor() {
@@ -20,31 +20,24 @@ class MarketAnalyser {
 
   async analyse() {
     try {
-      const SQL = await initSqlJs();
-      const dbBuffer = fs.readFileSync(DB_PATH);
-      const db = new SQL.Database(dbBuffer);
+      const db = new Database(DB_PATH, { readonly: true });
 
-      const result = db.exec(`
+      let candles = db.prepare(`
         SELECT timestamp, open, high, low, close, volume
         FROM candles
         WHERE pair = 'BTC/USD' AND interval = '1D'
         ORDER BY timestamp DESC
         LIMIT 200
-      `);
+      `).all();
 
       db.close();
 
-      if (!result.length || !result[0].values.length) {
+      if (!candles.length) {
         console.error('No candle data found');
         return this.getDefaultState();
       }
 
-      const { columns, values } = result[0];
-      const candles = values.map(row => {
-        const c = {};
-        columns.forEach((col, i) => c[col] = row[i]);
-        return c;
-      }).reverse();
+      candles = candles.reverse();
 
       if (candles.length < 50) {
         console.error('Insufficient candle data');

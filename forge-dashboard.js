@@ -7,8 +7,6 @@
 
 'use strict';
 
-require('dotenv').config();
-
 const express      = require('express');
 const http         = require('http');
 const WebSocket    = require('ws');
@@ -17,8 +15,27 @@ const path         = require('path');
 const https        = require('https');
 const { execSync } = require('child_process');
 
+require('dotenv').config({ path: path.join(__dirname, '.env'), override: true });
+
+// Manual brute-force fallback in case PM2 refuses to clear its env cache
+try {
+  let envPath = path.join(__dirname, '.env');
+  // Fallback to .env.txt if Windows secretly added an extension
+  if (!fs.existsSync(envPath) && fs.existsSync(path.join(__dirname, '.env.txt'))) {
+    envPath = path.join(__dirname, '.env.txt');
+  }
+  if (fs.existsSync(envPath)) {
+    // Strip null bytes (UTF-16 encoding) and aggressively extract the key
+    const envContent = fs.readFileSync(envPath, 'utf8').replace(/\0/g, '');
+    const match = envContent.match(/GEMINI_API_KEY=([a-zA-Z0-9_\-]+)/);
+    if (match) {
+      process.env.GEMINI_API_KEY = match[1];
+    }
+  }
+} catch(e) {}
+
 const PORT = parseInt(process.env.DASHBOARD_PORT) || 3001;
-const HOME = process.env.HOME;
+const HOME = process.env.HOME || process.env.USERPROFILE || '';
 
 const app    = express();
 const server = http.createServer(app);
@@ -41,12 +58,20 @@ function getPM2() {
 }
 
 function getState() {
-  const base  = path.join(HOME, 'kraken-intelligence');
+  const base  = __dirname;
   const strat = readJSON(path.join(base, 'reasoning-bot/active_strategy.json'));
   const mon   = readJSON(path.join(base, 'reasoning-bot/data/monitor_log.json'));
+  let consecutiveLosses = 0;
+  if (mon && mon.trades) {
+    for (let i = mon.trades.length - 1; i >= 0; i--) {
+      if (!mon.trades[i].win) consecutiveLosses++;
+      else break;
+    }
+  }
   const fails = readJSON(path.join(base, 'reasoning-bot/data/validation_failures.json'), []);
   const ph    = readJSON(path.join(HOME, 'golem/test-engines/pharaoh/data/pharaoh-state.json'));
   const arc   = readJSON(path.join(base, 'reasoning-bot/data/strategy_archive.json'), []);
+  const pxAlerts = readJSON(path.join(base, 'reasoning-bot/data/praximous_alerts.json'), []);
   let strategies = [];
   try {
     const sel = fs.readFileSync(path.join(base, 'reasoning-bot/strategy_selector.js'), 'utf8');
@@ -63,22 +88,22 @@ function getState() {
     market:    strat ? strat.marketState : null,
     strategy:  strat ? { id: strat.strategy, name: strat.name } : null,
     monitor:   mon ? { checks: mon.checks, trades: mon.trades ? mon.trades.length : 0,
-                       positions: Object.keys(mon.positions||{}).length } : null,
-    pharaoh: ph, failures: fails.slice(0,3), strategies,
-    archive_count: arc.length, pm2: getPM2()
+                       positions: Object.keys(mon.positions||{}).length, consecutiveLosses } : null,
+    pharaoh: ph, failures: fails.slice(0,3), total_failures: fails.length, strategies,
+    archive_count: arc.length, pm2: getPM2(), praximous_alerts: pxAlerts
   };
 }
 
 async function getPrices() {
   return new Promise(resolve => {
-    https.get('https://api.kraken.com/0/public/Ticker?pair=XBTUSD,ETHUSD,SOLUSD,XRPUSD,LINKUSD,LTCUSD',
+    https.get('https://api.kraken.com/0/public/Ticker?pair=XBTUSD,ETHUSD,SOLUSD,XRPUSD,LINKUSD,LTCUSD,ETHXBT',
       { headers: { 'User-Agent': 'Forge/1.0' } }, res => {
       let d = '';
       res.on('data', c => d += c);
       res.on('end', () => {
         try {
           const map = { XXBTZUSD:'BTC', XETHZUSD:'ETH', SOLUSD:'SOL',
-                        XXRPZUSD:'XRP', LINKUSD:'LINK', XLTCZUSD:'LTC' };
+                        XXRPZUSD:'XRP', LINKUSD:'LINK', XLTCZUSD:'LTC', XETHXXBT:'ETHBTC', ETHXBT:'ETHBTC' };
           const out = {};
           for (const [k, v] of Object.entries(JSON.parse(d).result || {})) {
             const sym = map[k], price = parseFloat(v.c[0]), avg = parseFloat(v.p[1]);
@@ -94,6 +119,7 @@ async function getPrices() {
 let chatHistory = [];
 
 async function askGemini(message, context) {
+  if (!process.env.GEMINI_API_KEY) return '⚠️ API error: GEMINI_API_KEY is missing from your .env file.';
   try {
     const { GoogleGenAI } = require('@google/genai');
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -150,9 +176,11 @@ app.post('/api/chat', async (req, res) => {
     + '- Regime: '     + ((s.market&&s.market.regime)       || 'UNKNOWN') + '\n'
     + '- BTC: $'       + ((s.market&&s.market.btcPrice)      || '?')       + '\n'
     + '- Sentiment: '  + ((s.market&&s.market.sentiment)     || 'UNKNOWN') + '\n'
+    + '- Volume: '     + ((s.market&&s.market.volumeRatio)   || '?')       + 'x avg\n'
     + '- Strategy: '   + ((s.strategy&&s.strategy.name)      || 'None')    + '\n'
     + '- Checks: '     + ((s.monitor&&s.monitor.checks)       || 0)        + '\n'
     + '- Trades: '     + ((s.monitor&&s.monitor.trades)       || 0)        + '\n'
+    + '- Failures: '   + (s.total_failures || 0) + '\n'
     + '- Pharaoh: '    + ((s.pharaoh&&s.pharaoh.currentState) || 'UNKNOWN') + ' $' + ((s.pharaoh&&s.pharaoh.xrpPrice)||'?') + '\n'
     + '- F&G: '        + ((s.pharaoh&&s.pharaoh.fearGreed)    || '?')      + '/100\n'
     + '- Pool: '       + ((s.strategies&&s.strategies.length)  || 0)        + '\n'
@@ -184,6 +212,7 @@ function getFrontend() { return `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
 <title>S.O.T.O.S</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#09090b;--bg2:#111113;--bg3:#18181b;--bg4:#1f2024;--border:#27272a;--border2:#3f3f46;--accent:#2563eb;--accent2:#3b82f6;--accent3:#60a5fa;--cyan:#06b6d4;--green:#10b981;--gold:#f59e0b;--red:#ef4444;--text:#fafafa;--text2:#a1a1aa;--text3:#71717a;}
@@ -206,6 +235,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter'
 .golem-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:5px;color:var(--text3);margin-top:10px}
 .golem-state{font-size:12px;margin-top:5px;min-height:16px;text-align:center;padding:0 24px;transition:color 0.5s;letter-spacing:0.3px}
 .regime-badge{margin-top:5px;font-size:8px;letter-spacing:2.5px;padding:2px 9px;border-radius:8px;border:1px solid;transition:all 0.5s;font-family:'JetBrains Mono',monospace}
+
+/* Desktop & Mobile Layout Unification */
+.main-content{display:flex;flex:1;overflow:hidden;position:relative;flex-direction:column}
+.left-pane{display:flex;flex-direction:column;flex:1;overflow:hidden;min-width:0}
+#panel{position:absolute;inset:0;z-index:100;background:var(--bg);transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column}
+#panel.open{transform:translateY(0)}
+@media(min-width: 950px){
+  .main-content{flex-direction:row;} .left-pane{flex:0 0 360px;border-right:1px solid var(--border);}
+  #panel{position:static;transform:none;flex:1;z-index:1;} .panel-bar,.data-btn{display:none;}
+  .panel-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-content:start;grid-auto-rows:max-content;} .sgrid,.full-width{grid-column:1/-1;}
+}
+
 .strip{display:flex;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg2);overflow-x:auto;flex-shrink:0;scrollbar-width:none}
 .strip::-webkit-scrollbar{display:none}
 .strip-item{display:flex;flex-direction:column;gap:2px;padding:7px 13px;border-right:1px solid var(--border);flex-shrink:0}
@@ -235,8 +276,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter'
 .chat-input::placeholder{color:var(--text3)}
 .send-btn{background:var(--accent);border:none;border-radius:7px;color:white;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;letter-spacing:1px;padding:0 15px;cursor:pointer}
 .send-btn:active{opacity:0.75}.send-btn:disabled{opacity:0.3;cursor:not-allowed}
-#panel{position:fixed;inset:0;z-index:100;background:var(--bg);transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column}
-#panel.open{transform:translateY(0)}
 .panel-bar{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
 .panel-title{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text2)}
 .close-btn{background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace;letter-spacing:1px;padding:5px 12px;cursor:pointer}
@@ -244,10 +283,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter'
 .panel-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
 .panel-body::-webkit-scrollbar{width:2px}
 .panel-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-.dcard{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.dcard{background:var(--bg2);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;max-height:380px}
 .dcard-head{padding:8px 13px 7px;border-bottom:1px solid var(--border)}
 .dcard-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2.5px;color:var(--text3);text-transform:uppercase}
-.dcard-body{padding:11px 13px}
+.dcard-body{padding:11px 13px;overflow-y:auto;flex:1;}
+.dcard-body::-webkit-scrollbar{width:4px}.dcard-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 .drow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(39,39,42,0.6)}
 .drow:last-child{border-bottom:none}
 .dk{font-size:12px;color:var(--text2)}.dv{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);font-weight:500}
@@ -286,12 +326,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter'
       <button class="data-btn" onclick="openPanel()">DATA &#8593;</button>
     </div>
   </div>
-  <div class="stage">
-    <canvas id="golem-canvas" width="260" height="260"></canvas>
-    <div class="golem-label">G O L E M</div>
-    <div class="golem-state" id="golem-state">Initialising...</div>
-    <div class="regime-badge" id="regime-badge">RANGING</div>
-  </div>
   <div class="strip">
     <div class="strip-item"><div class="s-sym">BTC</div><div class="s-price" id="p-BTC">--</div><div class="s-chg" id="c-BTC">--</div></div>
     <div class="strip-item"><div class="s-sym">ETH</div><div class="s-price" id="p-ETH">--</div><div class="s-chg" id="c-ETH">--</div></div>
@@ -299,76 +333,88 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter'
     <div class="strip-item"><div class="s-sym">XRP</div><div class="s-price" id="p-XRP">--</div><div class="s-chg" id="c-XRP">--</div></div>
     <div class="strip-item"><div class="s-sym">LINK</div><div class="s-price" id="p-LINK">--</div><div class="s-chg" id="c-LINK">--</div></div>
     <div class="strip-item"><div class="s-sym">LTC</div><div class="s-price" id="p-LTC">--</div><div class="s-chg" id="c-LTC">--</div></div>
+    <div class="strip-item"><div class="s-sym">ETH/BTC</div><div class="s-price" id="p-ETHBTC">--</div><div class="s-chg" id="c-ETHBTC">--</div></div>
   </div>
-  <div class="chat">
-    <div class="prompts">
-      <div class="chip" onclick="sendPrompt(this)">What is the market doing?</div>
-      <div class="chip" onclick="sendPrompt(this)">Should I trade right now?</div>
-      <div class="chip" onclick="sendPrompt(this)">How is Pharaoh doing?</div>
-      <div class="chip" onclick="sendPrompt(this)">Give me a system summary</div>
-      <div class="chip" onclick="sendPrompt(this)">What regime are we in?</div>
-      <div class="chip" onclick="sendPrompt(this)">What strategies passed?</div>
-    </div>
-    <div class="msgs" id="msgs">
-      <div class="msg msg-g">
-        <div class="msg-lbl">GOLEM</div>
-        <div>System online. Full platform visibility active. Ask me anything.</div>
+  
+  <div class="main-content">
+    <div class="left-pane">
+      <div class="stage">
+        <canvas id="golem-canvas" width="260" height="260"></canvas>
+        <div class="golem-label">G O L E M</div>
+        <div class="golem-state" id="golem-state">Initialising...</div>
+        <div class="regime-badge" id="regime-badge">RANGING</div>
+      </div>
+      <div class="chat">
+        <div class="prompts">
+          <div class="chip" onclick="sendPrompt(this)">What is the market doing?</div>
+          <div class="chip" onclick="sendPrompt(this)">Should I trade right now?</div>
+          <div class="chip" onclick="sendPrompt(this)">Give me a system summary</div>
+          <div class="chip" onclick="sendPrompt(this)">What regime are we in?</div>
+        </div>
+        <div class="msgs" id="msgs">
+          <div class="msg msg-g">
+            <div class="msg-lbl">GOLEM</div>
+            <div>System online. Full platform visibility active. Ask me anything.</div>
+          </div>
+        </div>
+        <div class="input-row">
+          <input class="chat-input" id="chat-input" placeholder="Ask GOLEM..." onkeydown="if(event.key==='Enter')sendMsg()">
+          <button class="send-btn" id="send-btn" onclick="sendMsg()">SEND</button>
+        </div>
       </div>
     </div>
-    <div class="input-row">
-      <input class="chat-input" id="chat-input" placeholder="Ask GOLEM..." onkeydown="if(event.key==='Enter')sendMsg()">
-      <button class="send-btn" id="send-btn" onclick="sendMsg()">SEND</button>
-    </div>
-  </div>
-</div>
-
-<div id="panel">
-  <div class="panel-bar">
-    <div class="panel-title">SYSTEM INTELLIGENCE</div>
-    <button class="close-btn" onclick="closePanel()">CLOSE &#8595;</button>
-  </div>
-  <div class="panel-body">
-    <div class="sgrid">
-      <div class="sbox"><div class="sn" id="d-regime">--</div><div class="sl">MARKET REGIME</div></div>
-      <div class="sbox"><div class="sn" id="d-checks">--</div><div class="sl">MONITOR CHECKS</div></div>
-    </div>
-    <div class="dcard">
-      <div class="dcard-head"><div class="dcard-lbl">BTC / USD</div></div>
-      <div class="dcard-body">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:600;color:var(--accent3);line-height:1.2" id="d-btc">--</div>
-        <div style="font-size:11px;margin-top:4px" id="d-btc-chg">--</div>
+    
+    <div id="panel">
+      <div class="panel-bar">
+        <div class="panel-title">SYSTEM INTELLIGENCE</div>
+        <button class="close-btn" onclick="closePanel()">CLOSE &#8595;</button>
+      </div>
+      <div class="panel-body">
+        <div class="sgrid">
+          <div class="sbox"><div class="sn" id="d-regime">--</div><div class="sl">MARKET REGIME</div></div>
+          <div class="sbox"><div class="sn" id="d-checks">--</div><div class="sl">MONITOR CHECKS</div></div>
+        </div>
+        <div class="dcard full-width">
+          <div class="dcard-head"><div class="dcard-lbl">Strategy Performance (Returns %)</div></div>
+          <div class="dcard-body" style="height:220px;overflow:hidden;padding-top:16px"><canvas id="perfChart"></canvas></div>
+        </div>
+        <div class="dcard">
+          <div class="dcard-head"><div class="dcard-lbl">System Memory (MB)</div></div>
+          <div class="dcard-body" style="height:190px;overflow:hidden;padding:16px"><canvas id="memChart"></canvas></div>
+        </div>
+        <div class="dcard"><div class="dcard-head"><div class="dcard-lbl">PM2 Processes</div></div><div class="dcard-body" id="d-pm2"></div></div>
+        <div class="dcard"><div class="dcard-head"><div class="dcard-lbl">Praximous Swarm Alerts</div></div><div class="dcard-body" id="d-praximous"></div></div>
+        <div class="dcard"><div class="dcard-head"><div class="dcard-lbl">Live Prices</div></div><div class="dcard-body" id="d-prices"></div></div>
+        <div class="dcard">
+          <div class="dcard-head"><div class="dcard-lbl">Active Strategy</div></div>
+          <div class="dcard-body">
+            <div class="drow"><span class="dk">Strategy</span><span class="dv" id="d-strat">--</span></div>
+            <div class="drow"><span class="dk">Phase</span><span class="dv" id="d-phase">--</span></div>
+            <div class="drow"><span class="dk">Sentiment</span><span class="dv" id="d-sent">--</span></div>
+            <div class="drow"><span class="dk">Trades</span><span class="dv" id="d-trades">--</span></div>
+          </div>
+        </div>
+        <div class="dcard full-width"><div class="dcard-head"><div class="dcard-lbl">Strategy Pool</div></div><div class="dcard-body" id="d-pool"></div></div>
+        <div class="dcard"><div class="dcard-head"><div class="dcard-lbl">Failure Memory</div></div><div class="dcard-body" id="d-fails"></div></div>
+        <div class="dcard">
+          <div class="dcard-head"><div class="dcard-lbl">Pharaoh -- XRP Sentinel</div></div>
+          <div class="dcard-body">
+            <div class="drow"><span class="dk">Status</span><span class="dv" id="d-ph-st">--</span></div>
+            <div class="drow"><span class="dk">XRP Price</span><span class="dv" id="d-ph-px">--</span></div>
+            <div class="drow"><span class="dk">Fear and Greed</span><span class="dv" id="d-ph-fg">--</span></div>
+            <div class="drow"><span class="dk">RSI</span><span class="dv" id="d-ph-rsi">--</span></div>
+            <div class="drow"><span class="dk">Mode</span><span class="dv" style="color:var(--gold)">DRY RUN</span></div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="dcard"><div class="dcard-head"><div class="dcard-lbl">Live Prices</div></div><div class="dcard-body" id="d-prices"></div></div>
-    <div class="dcard">
-      <div class="dcard-head"><div class="dcard-lbl">Active Strategy</div></div>
-      <div class="dcard-body">
-        <div class="drow"><span class="dk">Strategy</span><span class="dv" id="d-strat">--</span></div>
-        <div class="drow"><span class="dk">Phase</span><span class="dv" id="d-phase">--</span></div>
-        <div class="drow"><span class="dk">Sentiment</span><span class="dv" id="d-sent">--</span></div>
-        <div class="drow"><span class="dk">Trades</span><span class="dv" id="d-trades">--</span></div>
-      </div>
-    </div>
-    <div class="dcard">
-      <div class="dcard-head"><div class="dcard-lbl">Pharaoh -- XRP Sentinel</div></div>
-      <div class="dcard-body">
-        <div class="drow"><span class="dk">Status</span><span class="dv" id="d-ph-st">--</span></div>
-        <div class="drow"><span class="dk">XRP Price</span><span class="dv" id="d-ph-px">--</span></div>
-        <div class="drow"><span class="dk">Fear and Greed</span><span class="dv" id="d-ph-fg">--</span></div>
-        <div class="drow"><span class="dk">RSI</span><span class="dv" id="d-ph-rsi">--</span></div>
-        <div class="drow"><span class="dk">Mode</span><span class="dv" style="color:var(--gold)">DRY RUN</span></div>
-      </div>
-    </div>
-    <div class="dcard"><div class="dcard-head"><div class="dcard-lbl">Strategy Pool</div></div><div class="dcard-body" id="d-pool"></div></div>
-    <div class="dcard"><div class="dcard-head"><div class="dcard-lbl">PM2 Processes</div></div><div class="dcard-body" id="d-pm2"></div></div>
-    <div class="dcard"><div class="dcard-head"><div class="dcard-lbl">Failure Memory</div></div><div class="dcard-body" id="d-fails"></div></div>
   </div>
 </div>
 
 <script>
 var REGIME_COLORS={RANGING:'#2563eb',TRENDING_UP:'#10b981',TRENDING_DOWN:'#ef4444',VOLATILE:'#f59e0b',UNKNOWN:'#6366f1'};
 var MODES={idle:{label:'Ready.',eyeSpd:0.038,breathe:0.013,mouth:0,scanSpd:1.0,ring:false,stream:false},think:{label:'Analysing...',eyeSpd:0.060,breathe:0.008,mouth:0,scanSpd:2.2,ring:false,stream:true},speak:{label:'Processing...',eyeSpd:0.055,breathe:0.010,mouth:1,scanSpd:1.5,ring:false,stream:false},alert:{label:'Signal detected.',eyeSpd:0.080,breathe:0.020,mouth:0,scanSpd:3.0,ring:true,stream:false}};
-var tick=0,currentMode='idle',currentRegime='RANGING',stateMsg='';
+var tick=0,currentMode='idle',currentRegime='RANGING',currentLosses=0,lastVol=0,lastFails=0,stateMsg='',bootComplete=false;
 window.GOLEM={
   setIdle:function(m){currentMode='idle';stateMsg=m||'';this._sync();},
   setThinking:function(m){currentMode='think';stateMsg=m||'';this._sync();},
@@ -482,29 +528,99 @@ function set(id,val){var el=document.getElementById(id);if(el)el.textContent=val
 function updateAll(){
   if(!appState)return;
   var m=appState.market||{},ph=appState.pharaoh||{},mn=appState.monitor||{};
-  var syms=['BTC','ETH','SOL','XRP','LINK','LTC'];
-  if(m.regime)GOLEM.setRegime(m.regime);
+  var syms=['BTC','ETH','SOL','XRP','LINK','LTC','ETHBTC'];
+  if(mn && mn.consecutiveLosses !== undefined){
+    if(bootComplete && mn.consecutiveLosses >= 3 && currentLosses < 3){
+      addMsg('🛑 CRITICAL ALERT: Sentinel agent reports ' + mn.consecutiveLosses + ' consecutive losses. Initiating Aegis Lock 2 revocation protocol.', 'g');
+      GOLEM.setAlert('Risk Detected!');
+      setTimeout(function(){ GOLEM.setIdle('Ready.'); }, 5000);
+    }
+    currentLosses = mn.consecutiveLosses;
+  }
+  if(m.volumeRatio !== undefined){
+    if(bootComplete && m.volumeRatio > 2.0 && lastVol <= 2.0){
+      addMsg('🚨 SCOUT ALERT: Massive volume spike detected (' + m.volumeRatio.toFixed(2) + 'x normal). Market volatility increasing.', 'g');
+      GOLEM.setAlert('Volume Spike!');
+      setTimeout(function(){ GOLEM.setIdle('Ready.'); }, 5000);
+    }
+    lastVol = m.volumeRatio;
+  }
+  if(appState.total_failures !== undefined){
+    if(bootComplete && appState.total_failures > 10 && lastFails <= 10){
+      addMsg('⚠️ FORGE MASTER ALERT: ' + appState.total_failures + ' consecutive validation failures. Reasoning engine stalling. Suggesting parameter mutation injection.', 'g');
+      GOLEM.setAlert('Forge Stalled!');
+      setTimeout(function(){ GOLEM.setIdle('Ready.'); }, 5000);
+    }
+    lastFails = appState.total_failures;
+  }
+  if(m.regime){
+    if(bootComplete && currentRegime !== m.regime){
+      addMsg('⚠️ TACTICAL ALERT: Market regime shift detected. Transitioned from ' + currentRegime + ' to ' + m.regime + '. Adjusting parameters.', 'g');
+      GOLEM.setAlert('Regime Shift!');
+      setTimeout(function(){ GOLEM.setIdle('Ready.'); }, 5000);
+    }
+    GOLEM.setRegime(m.regime);
+  }
   syms.forEach(function(s){
     var p=appState.prices&&appState.prices[s];if(!p)return;
-    set('p-'+s,'$'+p.price.toLocaleString(undefined,{maximumFractionDigits:4}));
+    set('p-'+s,(s==='ETHBTC'?'\u20BF':'$')+p.price.toLocaleString(undefined,{maximumFractionDigits:4}));
     var cel=document.getElementById('c-'+s);
     if(cel){cel.textContent=(p.change>=0?'+':'')+p.change.toFixed(2)+'%';cel.className='s-chg '+(p.change>=0?'up':'dn');}
   });
   set('d-regime',m.regime||'--');set('d-checks',(mn.checks||0).toLocaleString());
-  var btc=appState.prices&&appState.prices.BTC;
-  if(btc){set('d-btc','$'+btc.price.toLocaleString());var ce=document.getElementById('d-btc-chg');if(ce){ce.textContent=(btc.change>=0?'+':'')+btc.change.toFixed(2)+'% (24h)';ce.className=btc.change>=0?'up':'dn';}}
   var pl=document.getElementById('d-prices');
-  if(pl&&appState.prices){pl.innerHTML=syms.map(function(s){var p=appState.prices[s];if(!p)return'';return'<div class="pricerow"><span class="psym">'+s+'</span><span class="pval">$'+p.price.toLocaleString(undefined,{maximumFractionDigits:4})+'</span><span class="pchg '+(p.change>=0?'up':'dn')+'">'+(p.change>=0?'+':'')+p.change.toFixed(2)+'%</span></div>';}).join('');}
+  if(pl&&appState.prices){pl.innerHTML=syms.map(function(s){var p=appState.prices[s];if(!p)return'';return'<div class="pricerow"><span class="psym">'+(s==='ETHBTC'?'ETH/BTC':s)+'</span><span class="pval">'+(s==='ETHBTC'?'\u20BF':'$')+p.price.toLocaleString(undefined,{maximumFractionDigits:4})+'</span><span class="pchg '+(p.change>=0?'up':'dn')+'">'+(p.change>=0?'+':'')+p.change.toFixed(2)+'%</span></div>';}).join('');}
   set('d-strat',appState.strategy&&appState.strategy.name||'--');
   set('d-phase',m.phase||'--');set('d-sent',m.sentiment||'--');set('d-trades',(mn.trades||0).toString());
   set('d-ph-st',ph.currentState||'--');set('d-ph-px',ph.xrpPrice?'$'+ph.xrpPrice.toFixed(4):'--');
   set('d-ph-fg',ph.fearGreed!==undefined?ph.fearGreed+'/100':'--');set('d-ph-rsi',ph.rsi?ph.rsi.toFixed(1):'--');
   var sp=document.getElementById('d-pool');
   if(sp&&appState.strategies){sp.innerHTML=appState.strategies.slice(0,6).map(function(s){return'<div class="strow"><span class="stnm">'+s.name+'</span>'+(s.active?'<span class="badge">ACTIVE</span>':'')+(s.wr?'<span class="stwr">'+s.wr+'</span>':'')+'</div>';}).join('')||'<div style="color:var(--text3);font-size:12px">No strategies</div>';}
+  var px=document.getElementById('d-praximous');
+  if(px){px.innerHTML=appState.praximous_alerts&&appState.praximous_alerts.length?appState.praximous_alerts.slice(0,5).map(function(a){var timeStr=new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});return'<div class="frow"><div class="fn">'+a.icon+' '+a.agent+'<span style="float:right;font-size:9px;color:var(--text3);font-weight:normal;margin-top:2px">'+timeStr+'</span></div><div class="fr">'+a.message+'</div></div>';}).join(''):'<div style="color:var(--text3);font-size:12px;padding:4px 0">No recent alerts</div>';}
   var pp2=document.getElementById('d-pm2');
   if(pp2&&appState.pm2){pp2.innerHTML=appState.pm2.map(function(p){var on=p.status==='online',col=on?'var(--green)':'var(--red)';return'<div class="prow"><div class="pdot" style="background:'+col+';box-shadow:0 0 4px '+col+'"></div><span class="pname">'+p.name+'</span><span class="pmem">'+(on?p.memory+'mb':p.status)+'</span></div>';}).join('');}
   var ff=document.getElementById('d-fails');
   if(ff){ff.innerHTML=appState.failures&&appState.failures.length?appState.failures.map(function(f){return'<div class="frow"><div class="fn">'+f.name+'</div><div class="fr">'+f.reason+'</div></div>';}).join(''):'<div style="color:var(--text3);font-size:12px;padding:4px 0">No failures recorded</div>';}
+  
+  // Render Charts
+  if(window.Chart) {
+    Chart.defaults.color = '#a1a1aa';
+    Chart.defaults.font.family = "'JetBrains Mono', monospace";
+    
+    var pCtx = document.getElementById('perfChart');
+    if(pCtx && appState.strategies && appState.strategies.length > 0) {
+      var lbls = appState.strategies.map(function(s){return s.name.substring(0,18)});
+      var dts = appState.strategies.map(function(s){return parseFloat(s.ret)||0});
+      var bgs = dts.map(function(d){return d>=0?'rgba(16,185,129,0.7)':'rgba(239,68,68,0.7)'});
+      var bds = dts.map(function(d){return d>=0?'#10b981':'#ef4444'});
+      if(!window.pChart) {
+        window.pChart = new Chart(pCtx, {
+          type:'bar', data:{labels:lbls,datasets:[{data:dts,backgroundColor:bgs,borderColor:bds,borderWidth:1}]},
+          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#27272a'}},x:{grid:{display:false}}}}
+        });
+      } else {
+        window.pChart.data.labels=lbls; window.pChart.data.datasets[0].data=dts;
+        window.pChart.data.datasets[0].backgroundColor=bgs; window.pChart.data.datasets[0].borderColor=bds;
+        window.pChart.update();
+      }
+    }
+    
+    var mCtx = document.getElementById('memChart');
+    if(mCtx && appState.pm2) {
+      var mlbls = appState.pm2.map(function(p){return p.name});
+      var mdts = appState.pm2.map(function(p){return p.memory});
+      if(!window.mChart) {
+        window.mChart = new Chart(mCtx, {
+          type:'doughnut', data:{labels:mlbls,datasets:[{data:mdts,backgroundColor:['#3b82f6','#10b981','#f59e0b','#8b5cf6','#6366f1'],borderWidth:0}]},
+          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:10}}}},cutout:'70%'}
+        });
+      } else {
+        window.mChart.data.labels=mlbls; window.mChart.data.datasets[0].data=mdts;
+        window.mChart.update();
+      }
+    }
+  }
 }
 function sendMsg(){var inp=document.getElementById('chat-input'),msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');callGolem(msg);}
 function sendPrompt(el){addMsg(el.textContent,'u');callGolem(el.textContent);}
@@ -522,6 +638,7 @@ async function init(){
   try{var res=await fetch('/api/state');appState=await res.json();updateAll();var regime=(appState.market&&appState.market.regime)||'RANGING';GOLEM.setRegime(regime);GOLEM.setIdle('Ready  --  '+regime+' market detected');}
   catch(e){GOLEM.setIdle('Ready.');}
   connectWS();
+  bootComplete=true;
 }
 init();
 </script>

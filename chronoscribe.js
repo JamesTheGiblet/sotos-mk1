@@ -25,7 +25,7 @@ const fs     = require('fs');
 const path   = require('path');
 const crypto = require('crypto');
 
-let   AUDIT_LOG = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/chronoscribe_audit.json');
+let   AUDIT_LOG = path.join(__dirname, 'reasoning-bot/data/chronoscribe_audit.json');
 const OPERATOR  = 'JamesTheGiblet';
 const VERSION   = '1.0.0';
 
@@ -269,7 +269,7 @@ if (require.main === module) {
     }
   } else if (cmd === '--test') {
     console.log('🧪 Testing ChronoScribe (Using temporary test log)...\n');
-    AUDIT_LOG = path.join(process.env.HOME, 'kraken-intelligence/reasoning-bot/data/test_audit.json');
+    AUDIT_LOG = path.join(__dirname, 'reasoning-bot/data/test_audit.json');
     if (fs.existsSync(AUDIT_LOG)) fs.unlinkSync(AUDIT_LOG); // Start fresh
 
     const e1 = recordStrategyValidation('H.E Mean Reversion Bollinger', 'passed', 56.3, 45.2, 16, 'RANGING', 'Passed: 56.3% WR, +45.2% return, 16 trades');
