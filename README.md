@@ -155,3 +155,9 @@ Other tools: Whisper, Aegis, EmbedID, MarkFlow, CertiScope, TreeCraft, Test Gene
 *Giblets Creations — James Gilbert*
 *Built on Samsung S24 Ultra via Termux*
 *April 2026*
+<p align="center">
+  <img src="https://img.shields.io/badge/Forge‑Theory‑Labs‑Ecosystem-black" />
+  <img src="https://img.shields.io/badge/Semantic‑System‑typed-blue" />
+  <img src="https://img.shields.io/badge/SCP‑Capsule‑included-purple" />
+</p>
+
